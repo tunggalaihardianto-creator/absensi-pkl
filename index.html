@@ -127,10 +127,14 @@
             </div>
         </div>
 
-        <!-- Panduan Pasang di Layar Utama HP -->
-        <div class="bg-blue-50 border-t border-blue-100 p-4 text-center text-xs text-slate-600 space-y-1">
-            <p class="font-bold text-blue-800">📲 Pasang Aplikasi di Layar HP:</p>
-            <p><strong>Android (Chrome):</strong> Ketuk titik tiga (⋮) di pojok kanan atas &rarr; pilih <em>"Tambahkan ke layar utama / Install app"</em>.</p>
+        <!-- Panduan & Tombol Install di Layar Utama HP -->
+        <div class="bg-blue-50 border-t border-blue-100 p-4 text-center text-xs text-slate-600 space-y-2">
+            <button id="btn-install-pwa" class="hidden w-full py-2.5 px-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow transition flex items-center justify-center gap-2">
+                <span>📲</span>
+                <span>Install Aplikasi ke Layar HP</span>
+            </button>
+            <p class="font-bold text-blue-800">📲 Cara Pasang Manual di Layar HP:</p>
+            <p><strong>Android (Chrome):</strong> Ketuk titik tiga (⋮) di pojok kanan atas &rarr; pilih <em>"Tambahkan ke layar utama"</em>.</p>
             <p><strong>iPhone (Safari):</strong> Ketuk ikon Bagikan (<span class="font-mono">⍗</span>) di bawah &rarr; pilih <em>"Tambah ke Layar Utama"</em>.</p>
         </div>
     </div>
@@ -405,6 +409,36 @@
             } else {
                 alert("Tunggu hingga koordinat GPS Anda terdeteksi terlebih dahulu.");
             }
+        });
+
+        // ==========================================
+        // 6. AKTIFKAN SERVICE WORKER & TOMBOL INSTALL PWA
+        // ==========================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(() => console.log('Service Worker aktif'))
+                    .catch(err => console.log('Gagal daftar SW:', err));
+            });
+        }
+
+        let deferredPrompt;
+        const btnInstallPwa = document.getElementById('btn-install-pwa');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            btnInstallPwa.classList.remove('hidden');
+        });
+
+        btnInstallPwa.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                btnInstallPwa.classList.add('hidden');
+            }
+            deferredPrompt = null;
         });
 
         // Jalankan aplikasi
