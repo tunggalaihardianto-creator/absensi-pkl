@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Absensi Online Siswa PKL</title>
+    
+    <!-- Konfigurasi PWA & Ikon Aplikasi HP -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Absen PKL">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS SDK -->
@@ -117,13 +126,20 @@
                 </div>
             </div>
         </div>
+
+        <!-- Panduan Pasang di Layar Utama HP -->
+        <div class="bg-blue-50 border-t border-blue-100 p-4 text-center text-xs text-slate-600 space-y-1">
+            <p class="font-bold text-blue-800">📲 Pasang Aplikasi di Layar HP:</p>
+            <p><strong>Android (Chrome):</strong> Ketuk titik tiga (⋮) di pojok kanan atas &rarr; pilih <em>"Tambahkan ke layar utama / Install app"</em>.</p>
+            <p><strong>iPhone (Safari):</strong> Ketuk ikon Bagikan (<span class="font-mono">⍗</span>) di bawah &rarr; pilih <em>"Tambah ke Layar Utama"</em>.</p>
+        </div>
     </div>
 
     <script>
         // ==========================================
         // 1. KONFIGURASI SUPABASE (WAJIB DIISI!)
         // ==========================================
-        // Ganti kedua nilai di bawah dengan Project URL & Anon Public Key dari Supabase Anda
+        // Ganti kedua nilai di bawah dengan Project URL (tanpa '/' di akhir) & Anon Public Key Anda
         const SUPABASE_URL = 'https://xpgijautojdibfqvtzao.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwZ2lqYXV0b2pkaWJmcXZ0emFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NDc1OTgsImV4cCI6MjExMDIyMzU5OH0.VFNskVxPJJ8lmo-c6nJybGiBEa9Uw-uOX89IM78Znpw';
 
@@ -134,10 +150,10 @@
         // 2. DAFTAR LOKASI TEMPAT PKL (BISA DITAMBAH)
         // ==========================================
         const DAFTAR_TEMPAT_PKL = [
-            { nama: "Kantor Bupati Bulungan", lat: 2.8375, lng: 117.3653 },
-            { nama: "Telkom Tanjung Selor", lat: 2.8412, lng: 117.3689 },
-            { nama: "Bank Kaltimtara", lat: 2.8390, lng: 117.3641 },
-            { nama: "Bengkel Mitra Utama", lat: 2.8350, lng: 117.3700 }
+            { nama: "Kantor Bupati Bulungan", lat: 2.837500, lng: 117.365300 },
+            { nama: "Telkom Tanjung Selor", lat: 2.841200, lng: 117.368900 },
+            { nama: "Bank Kaltimtara", lat: 2.839000, lng: 117.364100 },
+            { nama: "Bengkel Mitra Utama", lat: 2.835000, lng: 117.370000 }
         ];
         const BATAS_RADIUS_METER = 50;
 
@@ -305,7 +321,6 @@
                 return;
             }
 
-            // Ubah status tombol menjadi loading
             btnAbsen.disabled = true;
             btnAbsen.innerHTML = `<span>⏳</span><span>Mengunggah Foto & Menyimpan...</span>`;
 
@@ -322,10 +337,10 @@
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 hasilFoto.src = dataUrl;
 
-                // 2. Ubah canvas menjadi file Blob (JPEG kompresi 80% agar hemat storage)
+                // 2. Ubah canvas menjadi file Blob
                 const blobFoto = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
 
-                // Buat nama file unik (contoh: 1731581234567_ahmad_fauzi.jpg)
+                // Buat nama file unik
                 const namaBersih = namaSiswa.toLowerCase().replace(/[^a-z0-9]/g, '_');
                 const namaFile = `${Date.now()}_${namaBersih}.jpg`;
 
