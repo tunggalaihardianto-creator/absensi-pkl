@@ -126,11 +126,12 @@
                                 <th class="py-3.5 px-4">Jarak & Peta</th>
                                 <th class="py-3.5 px-4">Jurnal Kegiatan</th>
                                 <th class="py-3.5 px-4 text-center">Foto Selfie</th>
+                                <th class="py-3.5 px-4 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="tabel-body" class="divide-y divide-slate-200 text-sm">
                             <tr>
-                                <td colspan="7" class="py-8 text-center text-slate-400">Memuat data dari database...</td>
+                                <td colspan="8" class="py-8 text-center text-slate-400">Memuat data dari database...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -182,7 +183,7 @@
             layarKunci.classList.add('hidden');
             kontenDashboard.classList.remove('hidden');
             sessionStorage.setItem('akses_guru_pkl', 'terbuka');
-            muatDataAbsensi(); // Data baru ditarik dari database setelah sandi benar
+            muatDataAbsensi();
         }
 
         function kunciLayar() {
@@ -194,7 +195,6 @@
             inputPassword.focus();
         }
 
-        // Cek apakah sesi sudah terbuka sebelumnya di tab ini
         if (sessionStorage.getItem('akses_guru_pkl') === 'terbuka') {
             bukaDashboard();
         }
@@ -224,11 +224,11 @@
 
         async function muatDataAbsensi() {
             if (SUPABASE_URL.includes('GANTI_DENGAN')) {
-                tabelBody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-500 font-semibold">Harap isi SUPABASE_URL dan SUPABASE_ANON_KEY terlebih dahulu pada kode rekap.html!</td></tr>`;
+                tabelBody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-red-500 font-semibold">Harap isi SUPABASE_URL dan SUPABASE_ANON_KEY terlebih dahulu pada kode rekap.html!</td></tr>`;
                 return;
             }
 
-            tabelBody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Sedang mengambil data terbaru...</td></tr>`;
+            tabelBody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">Sedang mengambil data terbaru...</td></tr>`;
 
             const { data, error } = await supabaseClient
                 .from('absensi_pkl')
@@ -236,7 +236,7 @@
                 .order('created_at', { ascending: false });
 
             if (error) {
-                tabelBody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
+                tabelBody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
                 return;
             }
 
@@ -283,7 +283,7 @@
 
         function renderTabel(data) {
             if (data.length === 0) {
-                tabelBody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Tidak ada data absensi yang sesuai filter.</td></tr>`;
+                tabelBody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">Tidak ada data absensi yang sesuai filter.</td></tr>`;
                 return;
             }
 
@@ -324,6 +324,13 @@
                                 <img src="${item.foto_url}" alt="Selfie" class="w-full h-full object-cover">
                             </button>
                         </td>
+                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                            <button onclick="hapusDataAbsen(${item.id}, '${escapeHTML(item.nama_siswa)}', '${item.foto_url}')"
+                                title="Hapus baris data ini"
+                                class="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition inline-flex items-center gap-1">
+                                <span>🗑️</span> Hapus
+                            </button>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -354,7 +361,41 @@
         filterTanggal.addEventListener('change', terapkanFilter);
 
         // ==========================================
-        // 5. MODAL PREVIEW FOTO & DOWNLOAD EXCEL
+        // 5. FUNGSI HAPUS DATA PER BARIS
+        // ==========================================
+        async function hapusDataAbsen(id, namaSiswa, fotoUrl) {
+            const konfirmasi = confirm(`Yakin ingin menghapus data absensi milik "${namaSiswa}"?\nData dan foto yang dihapus tidak dapat dikembalikan.`);
+            if (!konfirmasi) return;
+
+            try {
+                // 1. Hapus baris dari tabel 'absensi_pkl'
+                const { error: deleteError } = await supabaseClient
+                    .from('absensi_pkl')
+                    .delete()
+                    .eq('id', id);
+
+                if (deleteError) throw new Error(deleteError.message);
+
+                // 2. Hapus file foto dari Storage bucket 'foto-absen' agar hemat ruang
+                if (fotoUrl && fotoUrl.includes('/foto-absen/')) {
+                    const namaFile = fotoUrl.split('/foto-absen/')[1];
+                    if (namaFile) {
+                        await supabaseClient.storage.from('foto-absen').remove([namaFile]);
+                    }
+                }
+
+                // 3. Perbarui tampilan tabel di layar tanpa perlu reload penuh
+                semuaDataAbsensi = semuaDataAbsensi.filter(item => item.id !== id);
+                isiDropdownTempat(semuaDataAbsensi);
+                terapkanFilter();
+
+            } catch (err) {
+                alert("Gagal menghapus data: " + err.message + "\n\nPastikan Anda sudah menjalankan SQL Policy DELETE di Supabase.");
+            }
+        }
+
+        // ==========================================
+        // 6. MODAL PREVIEW FOTO & DOWNLOAD EXCEL
         // ==========================================
         function bukaModal(url, nama, info) {
             document.getElementById('modal-img').src = url;
