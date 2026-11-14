@@ -11,97 +11,134 @@
 </head>
 <body class="bg-slate-100 min-h-screen font-sans text-slate-800">
 
-    <!-- Navbar Atas -->
-    <nav class="bg-blue-700 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
-            <div>
-                <h1 class="text-xl font-bold tracking-wide">Dashboard Monitoring PKL</h1>
-                <p class="text-blue-200 text-xs">Rekap Kehadiran, Validasi Lokasi & Jurnal Harian Siswa</p>
+    <!-- ========================================== -->
+    <!-- LAYAR KUNCI PASSWORD GURU                  -->
+    <!-- ========================================== -->
+    <div id="layar-kunci" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-5">
+            <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl">
+                🔐
             </div>
-            <div class="flex items-center gap-2">
-                <button onclick="muatDataAbsensi()" class="bg-blue-600 hover:bg-blue-500 border border-blue-400 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5">
-                    <span>🔄</span> Refresh Data
+            <div>
+                <h2 class="text-lg font-bold text-slate-800">Akses Khusus Guru Pembimbing</h2>
+                <p class="text-xs text-slate-500 mt-1">Masukkan kata sandi untuk melihat rekap absensi dan foto siswa PKL.</p>
+            </div>
+            
+            <form id="form-login-guru" class="space-y-3 text-left">
+                <div>
+                    <input type="password" id="input-password-guru" placeholder="Masukkan kata sandi..." required autofocus
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p id="pesan-error-sandi" class="hidden text-xs text-red-600 text-center mt-1.5 font-medium">
+                        Kata sandi salah. Silakan coba lagi.
+                    </p>
+                </div>
+                <button type="submit"
+                    class="w-full py-3 px-4 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition shadow-md text-sm">
+                    Buka Dashboard
                 </button>
-                <button onclick="downloadCSV()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition flex items-center gap-1.5">
-                    <span>📥</span> Download Excel (CSV)
-                </button>
-            </div>
+            </form>
         </div>
-    </nav>
+    </div>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <!-- ========================================== -->
+    <!-- KONTEN UTAMA DASHBOARD (TERSEMBUNYI AWAL)  -->
+    <!-- ========================================== -->
+    <div id="konten-dashboard" class="hidden">
+        <!-- Navbar Atas -->
+        <nav class="bg-blue-700 text-white shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Dashboard Monitoring PKL</h1>
+                    <p class="text-blue-200 text-xs">Rekap Kehadiran, Validasi Lokasi & Jurnal Harian Siswa</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="muatDataAbsensi()" class="bg-blue-600 hover:bg-blue-500 border border-blue-400 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5">
+                        <span>🔄</span> Refresh
+                    </button>
+                    <button onclick="downloadCSV()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition flex items-center gap-1.5">
+                        <span>📥</span> Download Excel
+                    </button>
+                    <button onclick="kunciLayar()" class="bg-slate-800 hover:bg-slate-900 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5">
+                        <span>🔒</span> Kunci Layar
+                    </button>
+                </div>
+            </div>
+        </nav>
 
-        <!-- Kartu Ringkasan Statistik -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-xs text-slate-500 font-medium">Total Data Ditampilkan</p>
-                <p class="text-2xl font-bold text-slate-800 mt-1" id="stat-total">0</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-xs text-slate-500 font-medium">Absen Masuk</p>
-                <p class="text-2xl font-bold text-blue-600 mt-1" id="stat-masuk">0</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-xs text-slate-500 font-medium">Absen Pulang</p>
-                <p class="text-2xl font-bold text-amber-600 mt-1" id="stat-pulang">0</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-xs text-slate-500 font-medium">Rata-rata Jarak GPS</p>
-                <p class="text-2xl font-bold text-emerald-600 mt-1" id="stat-jarak">0 m</p>
-            </div>
-        </div>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Panel Filter & Pencarian -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Cari Nama Siswa</label>
-                <input type="text" id="filter-nama" placeholder="Ketik nama siswa..."
-                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- Kartu Ringkasan Statistik -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs text-slate-500 font-medium">Total Data Ditampilkan</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1" id="stat-total">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs text-slate-500 font-medium">Absen Masuk</p>
+                    <p class="text-2xl font-bold text-blue-600 mt-1" id="stat-masuk">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs text-slate-500 font-medium">Absen Pulang</p>
+                    <p class="text-2xl font-bold text-amber-600 mt-1" id="stat-pulang">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs text-slate-500 font-medium">Rata-rata Jarak GPS</p>
+                    <p class="text-2xl font-bold text-emerald-600 mt-1" id="stat-jarak">0 m</p>
+                </div>
             </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Filter Tempat PKL</label>
-                <select id="filter-tempat"
-                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Semua Tempat PKL</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Filter Tanggal</label>
-                <input type="date" id="filter-tanggal"
-                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div class="flex items-end">
-                <button onclick="resetFilter()" class="w-full py-2 px-4 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 text-sm font-medium transition">
-                    Reset Filter
-                </button>
-            </div>
-        </div>
 
-        <!-- Tabel Data Absensi -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
-                            <th class="py-3.5 px-4">Waktu (WITA)</th>
-                            <th class="py-3.5 px-4">Nama Siswa</th>
-                            <th class="py-3.5 px-4">Tempat PKL</th>
-                            <th class="py-3.5 px-4">Jenis</th>
-                            <th class="py-3.5 px-4">Jarak & Peta</th>
-                            <th class="py-3.5 px-4">Jurnal Kegiatan</th>
-                            <th class="py-3.5 px-4 text-center">Foto Selfie</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabel-body" class="divide-y divide-slate-200 text-sm">
-                        <tr>
-                            <td colspan="7" class="py-8 text-center text-slate-400">Memuat data dari database...</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Panel Filter & Pencarian -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Cari Nama Siswa</label>
+                    <input type="text" id="filter-nama" placeholder="Ketik nama siswa..."
+                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Filter Tempat PKL</label>
+                    <select id="filter-tempat"
+                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Semua Tempat PKL</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Filter Tanggal</label>
+                    <input type="date" id="filter-tanggal"
+                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="resetFilter()" class="w-full py-2 px-4 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 text-sm font-medium transition">
+                        Reset Filter
+                    </button>
+                </div>
             </div>
-        </div>
 
-    </main>
+            <!-- Tabel Data Absensi -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
+                                <th class="py-3.5 px-4">Waktu (WITA)</th>
+                                <th class="py-3.5 px-4">Nama Siswa</th>
+                                <th class="py-3.5 px-4">Tempat PKL</th>
+                                <th class="py-3.5 px-4">Jenis</th>
+                                <th class="py-3.5 px-4">Jarak & Peta</th>
+                                <th class="py-3.5 px-4">Jurnal Kegiatan</th>
+                                <th class="py-3.5 px-4 text-center">Foto Selfie</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-body" class="divide-y divide-slate-200 text-sm">
+                            <tr>
+                                <td colspan="7" class="py-8 text-center text-slate-400">Memuat data dari database...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
 
     <!-- Modal Perbesar Foto Selfie -->
     <div id="modal-foto" onclick="tutupModal()" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4">
@@ -121,14 +158,62 @@
 
     <script>
         // ==========================================
-        // 1. KONFIGURASI SUPABASE (ISI SAMA DENGAN index.html)
+        // 1. KONFIGURASI SANDI GURU & SUPABASE
         // ==========================================
+        // Ubah kata sandi di bawah ini sesuai keinginan Anda
+        const PASSWORD_GURU = 'guru2026';
+
+        // Ganti dengan Project URL & Anon Public Key dari Supabase Anda
         const SUPABASE_URL = 'https://xpgijautojdibfqvtzao.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwZ2lqYXV0b2pkaWJmcXZ0emFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NDc1OTgsImV4cCI6MjExMDIyMzU5OH0.VFNskVxPJJ8lmo-c6nJybGiBEa9Uw-uOX89IM78Znpw';
 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Elemen DOM
+        // ==========================================
+        // 2. LOGIKA LAYAR KUNCI PASSWORD
+        // ==========================================
+        const layarKunci = document.getElementById('layar-kunci');
+        const kontenDashboard = document.getElementById('konten-dashboard');
+        const formLogin = document.getElementById('form-login-guru');
+        const inputPassword = document.getElementById('input-password-guru');
+        const pesanErrorSandi = document.getElementById('pesan-error-sandi');
+
+        function bukaDashboard() {
+            layarKunci.classList.add('hidden');
+            kontenDashboard.classList.remove('hidden');
+            sessionStorage.setItem('akses_guru_pkl', 'terbuka');
+            muatDataAbsensi(); // Data baru ditarik dari database setelah sandi benar
+        }
+
+        function kunciLayar() {
+            sessionStorage.removeItem('akses_guru_pkl');
+            inputPassword.value = '';
+            pesanErrorSandi.classList.add('hidden');
+            kontenDashboard.classList.add('hidden');
+            layarKunci.classList.remove('hidden');
+            inputPassword.focus();
+        }
+
+        // Cek apakah sesi sudah terbuka sebelumnya di tab ini
+        if (sessionStorage.getItem('akses_guru_pkl') === 'terbuka') {
+            bukaDashboard();
+        }
+
+        formLogin.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (inputPassword.value === PASSWORD_GURU) {
+                pesanErrorSandi.classList.add('hidden');
+                bukaDashboard();
+            } else {
+                pesanErrorSandi.classList.remove('hidden');
+                inputPassword.value = '';
+                inputPassword.focus();
+            }
+        });
+
+        // ==========================================
+        // 3. AMBIL DATA DARI TABEL 'absensi_pkl'
+        // ==========================================
         const tabelBody = document.getElementById('tabel-body');
         const filterNama = document.getElementById('filter-nama');
         const filterTempat = document.getElementById('filter-tempat');
@@ -137,9 +222,6 @@
         let semuaDataAbsensi = [];
         let dataTersaring = [];
 
-        // ==========================================
-        // 2. AMBIL DATA DARI TABEL 'absensi_pkl'
-        // ==========================================
         async function muatDataAbsensi() {
             if (SUPABASE_URL.includes('GANTI_DENGAN')) {
                 tabelBody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-500 font-semibold">Harap isi SUPABASE_URL dan SUPABASE_ANON_KEY terlebih dahulu pada kode rekap.html!</td></tr>`;
@@ -163,7 +245,6 @@
             terapkanFilter();
         }
 
-        // Isi opsi dropdown filter Tempat PKL secara otomatis dari data yang masuk
         function isiDropdownTempat(data) {
             const nilaiSebelumnya = filterTempat.value;
             const daftarTempatUnik = [...new Set(data.map(item => item.tempat_pkl))].sort();
@@ -179,18 +260,17 @@
         }
 
         // ==========================================
-        // 3. FILTER DATA & RENDER TABEL
+        // 4. FILTER DATA & RENDER TABEL
         // ==========================================
         function terapkanFilter() {
             const kataKunciNama = filterNama.value.toLowerCase().trim();
             const tempatDipilih = filterTempat.value;
-            const tanggalDipilih = filterTanggal.value; // Format: YYYY-MM-DD
+            const tanggalDipilih = filterTanggal.value;
 
             dataTersaring = semuaDataAbsensi.filter(item => {
                 const cocokNama = item.nama_siswa.toLowerCase().includes(kataKunciNama);
                 const cocokTempat = tempatDipilih === "" || item.tempat_pkl === tempatDipilih;
                 
-                // Konversi created_at (UTC) ke tanggal lokal YYYY-MM-DD untuk pencocokan filter
                 const tanggalLokalItem = new Date(item.created_at).toLocaleDateString('en-CA');
                 const cocokTanggal = tanggalDipilih === "" || tanggalLokalItem === tanggalDipilih;
 
@@ -269,13 +349,12 @@
             terapkanFilter();
         }
 
-        // Event listener untuk filter real-time
         filterNama.addEventListener('input', terapkanFilter);
         filterTempat.addEventListener('change', terapkanFilter);
         filterTanggal.addEventListener('change', terapkanFilter);
 
         // ==========================================
-        // 4. MODAL PREVIEW FOTO
+        // 5. MODAL PREVIEW FOTO & DOWNLOAD EXCEL
         // ==========================================
         function bukaModal(url, nama, info) {
             document.getElementById('modal-img').src = url;
@@ -288,16 +367,12 @@
             document.getElementById('modal-foto').classList.add('hidden');
         }
 
-        // ==========================================
-        // 5. DOWNLOAD LAPORAN KE EXCEL (CSV)
-        // ==========================================
         function downloadCSV() {
             if (dataTersaring.length === 0) {
                 alert("Tidak ada data untuk diunduh.");
                 return;
             }
 
-            // Header kolom CSV (menggunakan pemisah titik koma ';' agar otomatis rapi di Excel Indonesia)
             const headers = ["No", "Tanggal", "Jam (WITA)", "Nama Siswa", "Tempat PKL", "Jenis Absen", "Jarak (Meter)", "Latitude", "Longitude", "Jurnal Kegiatan", "Link Foto"];
             
             const rows = dataTersaring.map((item, index) => {
@@ -321,7 +396,6 @@
                 ].join(";");
             });
 
-            // Tambahkan BOM (\uFEFF) agar Excel membaca karakter UTF-8 dengan benar
             const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\n");
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -335,15 +409,11 @@
             document.body.removeChild(link);
         }
 
-        // Keamanan dasar mencegah XSS pada teks inputan
         function escapeHTML(str) {
             return str.replace(/[&<>'"]/g, tag => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
             }[tag]));
         }
-
-        // Muat data pertama kali saat halaman dibuka
-        muatDataAbsensi();
     </script>
 </body>
 </html>
