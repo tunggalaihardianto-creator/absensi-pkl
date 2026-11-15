@@ -49,6 +49,7 @@
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">1. Tempat PKL *</label>
                         <select id="pilih-tempat"
                             class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Memuat lokasi...</option>
                         </select>
                     </div>
                     <div>
@@ -76,11 +77,22 @@
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">3. Pilih Nama Siswa *</label>
                     <select id="pilih-nama" required
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">-- Pilih Nama Anda --</option>
+                        <option value="">-- Pilih Tempat PKL Terlebih Dahulu --</option>
                     </select>
                 </div>
 
-                <!-- Banner Peringatan Jika Sudah Pernah Absen Hari Ini -->
+                <!-- Panel Riwayat & Status ACC / Revisi Guru Hari Ini -->
+                <div id="panel-riwayat-hari-ini" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                        <span class="text-[11px] font-bold text-slate-700 uppercase">📋 Status Jurnal Anda Hari Ini</span>
+                        <button type="button" onclick="cekStatusAbsenHariIni()" class="text-[11px] text-blue-600 hover:underline font-semibold">
+                            🔄 Cek Update
+                        </button>
+                    </div>
+                    <div id="list-riwayat-hari-ini" class="space-y-2 text-xs"></div>
+                </div>
+
+                <!-- Banner Peringatan Jika Sudah Pernah Absen Jenis Ini Hari Ini -->
                 <div id="banner-sudah-absen" class="hidden bg-amber-50 border border-amber-300 text-amber-800 p-3 rounded-xl text-xs flex items-start gap-2">
                     <span class="text-base">⚠️</span>
                     <div>
@@ -89,10 +101,28 @@
                     </div>
                 </div>
 
-                <div>
-                    <label id="label-jurnal" class="block text-xs font-semibold text-slate-600 uppercase mb-1">4. Jurnal Kegiatan Hari Ini</label>
+                <!-- Jurnal Kegiatan & Dokumentasi Foto -->
+                <div class="space-y-2">
+                    <label id="label-jurnal" class="block text-xs font-semibold text-slate-600 uppercase">4. Jurnal Kegiatan Hari Ini</label>
                     <textarea id="input-jurnal" rows="2" placeholder="Tuliskan singkat kegiatan/pekerjaan hari ini..."
                         class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+
+                    <!-- Input Lampiran Foto Dokumentasi Kegiatan -->
+                    <div id="box-dokumentasi-kegiatan" class="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs font-semibold text-slate-600">🖼️ Dokumentasi Kegiatan (Opsional)</span>
+                            <label for="input-foto-kegiatan" class="cursor-pointer bg-white hover:bg-slate-100 text-blue-700 border border-blue-300 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs">
+                                + Pilih / Foto Kegiatan
+                            </label>
+                            <input type="file" id="input-foto-kegiatan" accept="image/*" class="hidden">
+                        </div>
+                        <div id="preview-kegiatan-wrapper" class="hidden relative rounded-lg overflow-hidden border border-slate-300">
+                            <img id="preview-foto-kegiatan" src="" alt="Preview Dokumentasi" class="w-full max-h-40 object-cover">
+                            <button type="button" onclick="hapusFotoKegiatan()" class="absolute top-1.5 right-1.5 bg-red-600/90 hover:bg-red-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow">
+                                ✕ Hapus Foto
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -186,62 +216,15 @@
         const SUPABASE_URL = 'https://xpgijautojdibfqvtzao.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwZ2lqYXV0b2pkaWJmcXZ0emFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NDc1OTgsImV4cCI6MjExMDIyMzU5OH0.VFNskVxPJJ8lmo-c6nJybGiBEa9Uw-uOX89IM78Znpw';
 
-        // Pengaturan Jam Absensi (Format 24 Jam: "JJ:MM")
         const JADWAL_ABSEN = {
             masukMulai: "06:30",
             masukSelesai: "09:00",
             pulangMulai: "15:00",
             pulangSelesai: "21:00"
         };
+        const BATAS_RADIUS_METER = 50;
 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // ==========================================
-        // 2. DATA TEMPAT PKL & DAFTAR NAMA SISWA
-        // ==========================================
-        const DAFTAR_TEMPAT_PKL = [
-            {
-                nama: "Kantor Bupati Bulungan",
-                lat: 2.837500,
-                lng: 117.365300,
-                siswa: [
-                    "Ahmad Fauzi",
-                    "Budi Santoso",
-                    "Citra Lestari",
-                    "Dewi Anggraini"
-                ]
-            },
-            {
-                nama: "Telkom Tanjung Selor",
-                lat: 2.841200,
-                lng: 117.368900,
-                siswa: [
-                    "Eko Prasetyo",
-                    "Fitri Handayani",
-                    "Gilang Ramadhan"
-                ]
-            },
-            {
-                nama: "Bank Kaltimtara",
-                lat: 2.839000,
-                lng: 117.364100,
-                siswa: [
-                    "Hendra Wijaya",
-                    "Indah Permatasari"
-                ]
-            },
-            {
-                nama: "Bengkel Mitra Utama",
-                lat: 2.835000,
-                lng: 117.370000,
-                siswa: [
-                    "Joko Susilo",
-                    "Kurniawan Saputra",
-                    "Lukman Hakim"
-                ]
-            }
-        ];
-        const BATAS_RADIUS_METER = 50;
 
         // Elemen DOM
         const pilihTempat = document.getElementById('pilih-tempat');
@@ -250,11 +233,17 @@
         const judulJamAbsen = document.getElementById('judul-jam-absen');
         const detailJamAbsen = document.getElementById('detail-jam-absen');
         const pilihNama = document.getElementById('pilih-nama');
+        const panelRiwayatHariIni = document.getElementById('panel-riwayat-hari-ini');
+        const listRiwayatHariIni = document.getElementById('list-riwayat-hari-ini');
         const bannerSudahAbsen = document.getElementById('banner-sudah-absen');
         const judulSudahAbsen = document.getElementById('judul-sudah-absen');
         const detailSudahAbsen = document.getElementById('detail-sudah-absen');
         const labelJurnal = document.getElementById('label-jurnal');
         const inputJurnal = document.getElementById('input-jurnal');
+        const boxDokumentasiKegiatan = document.getElementById('box-dokumentasi-kegiatan');
+        const inputFotoKegiatan = document.getElementById('input-foto-kegiatan');
+        const previewKegiatanWrapper = document.getElementById('preview-kegiatan-wrapper');
+        const previewFotoKegiatan = document.getElementById('preview-foto-kegiatan');
         const infoKameraMode = document.getElementById('info-kamera-mode');
         const teksModeFoto = document.getElementById('teks-mode-foto');
         const btnGantiKamera = document.getElementById('btn-ganti-kamera');
@@ -270,7 +259,9 @@
         const waktuAbsen = document.getElementById('waktu-absen');
         const judulSukses = document.getElementById('judul-sukses');
 
-        let lokasiKantorAktif = { ...DAFTAR_TEMPAT_PKL[0] };
+        let daftarTempatDB = [];
+        let daftarSiswaDB = [];
+        let lokasiKantorAktif = null;
         let posisiUserSaatIni = null;
         let jarakSaatIni = null;
         let kameraAktif = false;
@@ -280,9 +271,135 @@
         let sedangMengecekDuplikat = false;
         let modeKameraSaatIni = 'user';
         let streamAktif = null;
+        let blobFotoKegiatan = null;
 
         // ==========================================
-        // 3. VALIDASI BATAS JAM ABSENSI
+        // 2. PREVIEW & KOMPRESI FOTO DOKUMENTASI KEGIATAN
+        // ==========================================
+        inputFotoKegiatan.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                // Kompres gambar dokumentasi agar ringan (lebar maksimal 1000px, kualitas 80%)
+                blobFotoKegiatan = await kompresGambar(file, 1000, 0.8);
+                previewFotoKegiatan.src = URL.createObjectURL(blobFotoKegiatan);
+                previewKegiatanWrapper.classList.remove('hidden');
+            } catch (err) {
+                alert("Gagal memproses foto dokumentasi: " + err.message);
+                hapusFotoKegiatan();
+            }
+        });
+
+        function hapusFotoKegiatan() {
+            inputFotoKegiatan.value = '';
+            blobFotoKegiatan = null;
+            previewFotoKegiatan.src = '';
+            previewKegiatanWrapper.classList.add('hidden');
+        }
+
+        function kompresGambar(file, maxWidth, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = width;
+                        tempCanvas.height = height;
+                        const ctx = tempCanvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        tempCanvas.toBlob((blob) => {
+                            if (blob) resolve(blob);
+                            else reject(new Error("Gagal mengonversi gambar"));
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = () => reject(new Error("File gambar tidak valid"));
+                    img.src = event.target.result;
+                };
+                reader.onerror = () => reject(new Error("Gagal membaca file"));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ==========================================
+        // 3. MUAT DATA TEMPAT & SISWA DARI SUPABASE
+        // ==========================================
+        async function muatDataMasterDariDatabase() {
+            if (SUPABASE_URL.includes('GANTI_DENGAN')) {
+                pilihTempat.innerHTML = '<option value="">Isi kunci Supabase dulu</option>';
+                return;
+            }
+
+            const [resTempat, resSiswa] = await Promise.all([
+                supabaseClient.from('master_tempat_pkl').select('*').order('nama_tempat', { ascending: true }),
+                supabaseClient.from('master_siswa_pkl').select('*').order('nama_siswa', { ascending: true })
+            ]);
+
+            daftarTempatDB = resTempat.data || [];
+            daftarSiswaDB = resSiswa.data || [];
+
+            if (daftarTempatDB.length === 0) {
+                pilihTempat.innerHTML = '<option value="">Belum ada data tempat PKL</option>';
+                pilihNama.innerHTML = '<option value="">Tambahkan data di Dashboard Guru</option>';
+                return;
+            }
+
+            pilihTempat.innerHTML = '';
+            daftarTempatDB.forEach((tempat, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = tempat.nama_tempat;
+                pilihTempat.appendChild(option);
+            });
+
+            pilihTempat.value = 0;
+            lokasiKantorAktif = daftarTempatDB[0];
+            muatDaftarSiswaUntukTempat(lokasiKantorAktif.id);
+            perbaruiStatusLokasi();
+        }
+
+        function muatDaftarSiswaUntukTempat(tempatId) {
+            const siswaDiTempatIni = daftarSiswaDB.filter(s => s.tempat_id === tempatId);
+            pilihNama.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
+
+            if (siswaDiTempatIni.length === 0) {
+                pilihNama.innerHTML = '<option value="">(Belum ada siswa terdaftar di lokasi ini)</option>';
+            } else {
+                siswaDiTempatIni.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.nama_siswa;
+                    option.textContent = s.nama_siswa;
+                    pilihNama.appendChild(option);
+                });
+            }
+            cekStatusAbsenHariIni();
+        }
+
+        pilihTempat.addEventListener('change', (e) => {
+            const index = e.target.value;
+            if (daftarTempatDB[index]) {
+                lokasiKantorAktif = daftarTempatDB[index];
+                muatDaftarSiswaUntukTempat(lokasiKantorAktif.id);
+                perbaruiStatusLokasi();
+            }
+        });
+
+        pilihNama.addEventListener('change', () => {
+            cekStatusAbsenHariIni();
+        });
+
+        const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('tanggal-sekarang').textContent = new Date().toLocaleDateString('id-ID', opsiTanggal);
+
+        // ==========================================
+        // 4. VALIDASI BATAS JAM ABSENSI
         // ==========================================
         function konversiMenit(waktuStr) {
             const [jam, menit] = waktuStr.split(':').map(Number);
@@ -294,7 +411,6 @@
             const menitSekarang = sekarang.getHours() * 60 + sekarang.getMinutes();
             const jenis = pilihJenis.value;
 
-            // Update jam live di header
             document.getElementById('jam-live').textContent = sekarang.toLocaleTimeString('id-ID') + ' WITA';
 
             if (jenis === 'Masuk') {
@@ -322,7 +438,6 @@
                     bannerJamAbsen.classList.remove('hidden');
                 }
             } else {
-                // Mode Izin / Sakit selalu diizinkan kapan saja
                 dalamJamValid = true;
                 bannerJamAbsen.classList.add('hidden');
             }
@@ -330,11 +445,10 @@
             perbaruiTombolAbsen();
         }
 
-        // Perbarui jam setiap 1 detik
         setInterval(periksaJadwalJam, 1000);
 
         // ==========================================
-        // 4. PENGECEKAN ANTI-ABSEN GANDA KE SUPABASE
+        // 5. CEK RIWAYAT HARI INI + STATUS ACC GURU
         // ==========================================
         async function cekStatusAbsenHariIni() {
             const namaSiswa = pilihNama.value;
@@ -343,6 +457,7 @@
             if (!namaSiswa || SUPABASE_URL.includes('GANTI_DENGAN')) {
                 sudahAbsenHariIni = false;
                 bannerSudahAbsen.classList.add('hidden');
+                panelRiwayatHariIni.classList.add('hidden');
                 perbaruiTombolAbsen();
                 return false;
             }
@@ -359,27 +474,60 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('absensi_pkl')
-                    .select('id, created_at, tempat_pkl')
+                    .select('id, created_at, jenis_absen, tempat_pkl, jurnal_kegiatan, status_validasi, catatan_guru')
                     .eq('nama_siswa', namaSiswa)
-                    .eq('jenis_absen', jenisAbsen)
                     .gte('created_at', awalHari.toISOString())
                     .lte('created_at', akhirHari.toISOString())
-                    .limit(1);
+                    .order('created_at', { ascending: true });
 
                 if (error) {
                     sudahAbsenHariIni = false;
                     bannerSudahAbsen.classList.add('hidden');
+                    panelRiwayatHariIni.classList.add('hidden');
                     return false;
                 }
 
                 if (data && data.length > 0) {
+                    panelRiwayatHariIni.classList.remove('hidden');
+                    listRiwayatHariIni.innerHTML = data.map(item => {
+                        const jam = new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                        const val = item.status_validasi || 'Menunggu';
+                        
+                        let badgeVal = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 text-slate-700">⏳ Menunggu ACC</span>`;
+                        if (val === 'Disetujui') {
+                            badgeVal = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">☑️ Disetujui Guru</span>`;
+                        } else if (val === 'Revisi') {
+                            badgeVal = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">📝 Perlu Revisi</span>`;
+                        }
+
+                        const catatanHTML = item.catatan_guru
+                            ? `<p class="text-[11px] text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-1 mt-1">💬 Catatan Guru: <strong>${escapeHTML(item.catatan_guru)}</strong></p>`
+                            : '';
+
+                        return `
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-slate-800">${escapeHTML(item.jenis_absen)} <span class="font-normal text-slate-500">(${jam} WITA)</span></span>
+                                    ${badgeVal}
+                                </div>
+                                <p class="text-[11px] text-slate-600 mt-1 truncate">Jurnal: ${escapeHTML(item.jurnal_kegiatan || '-')}</p>
+                                ${catatanHTML}
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    panelRiwayatHariIni.classList.add('hidden');
+                }
+
+                const rekamanSama = (data || []).find(d => d.jenis_absen === jenisAbsen);
+                if (rekamanSama) {
                     sudahAbsenHariIni = true;
-                    const jamTercatat = new Date(data[0].created_at).toLocaleTimeString('id-ID', {
+                    const jamTercatat = new Date(rekamanSama.created_at).toLocaleTimeString('id-ID', {
                         hour: '2-digit',
                         minute: '2-digit'
                     });
                     judulSudahAbsen.textContent = `Anda sudah mengirim "${jenisAbsen}" hari ini!`;
-                    detailSudahAbsen.textContent = `Tercatat pukul ${jamTercatat} WITA di ${data[0].tempat_pkl}.`;
+                    detailSudahAbsen.textContent = `Tercatat pukul ${jamTercatat} WITA di ${rekamanSama.tempat_pkl}.`;
                     bannerSudahAbsen.classList.remove('hidden');
                     return true;
                 } else {
@@ -393,44 +541,52 @@
             }
         }
 
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        }
+
         // ==========================================
-        // 5. INISIALISASI PETA MINI (LEAFLET.JS)
+        // 6. INISIALISASI PETA MINI (LEAFLET.JS)
         // ==========================================
         const map = L.map('peta-mini', {
             zoomControl: false
-        }).setView([lokasiKantorAktif.lat, lokasiKantorAktif.lng], 17);
+        }).setView([2.8375, 117.3653], 16);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        const markerKantor = L.marker([lokasiKantorAktif.lat, lokasiKantorAktif.lng])
-            .addTo(map)
-            .bindPopup(`<b>${lokasiKantorAktif.nama}</b><br>Titik Pusat PKL`);
-
-        const lingkaranRadius = L.circle([lokasiKantorAktif.lat, lokasiKantorAktif.lng], {
-            color: '#ef4444',
-            fillColor: '#ef4444',
-            fillOpacity: 0.18,
-            radius: BATAS_RADIUS_METER
-        }).addTo(map);
-
+        let markerKantor = null;
+        let lingkaranRadius = null;
         let markerSiswa = null;
 
         function perbaruiVisualPeta(dalamRadius) {
-            const koordinatKantor = [lokasiKantorAktif.lat, lokasiKantorAktif.lng];
+            if (!lokasiKantorAktif) return;
+
+            const koordinatKantor = [lokasiKantorAktif.latitude, lokasiKantorAktif.longitude];
             
-            markerKantor.setLatLng(koordinatKantor)
-                .setPopupContent(`<b>${lokasiKantorAktif.nama}</b><br>Batas Radius ${BATAS_RADIUS_METER}m`);
-            
-            lingkaranRadius.setLatLng(koordinatKantor);
+            if (!markerKantor) {
+                markerKantor = L.marker(koordinatKantor).addTo(map);
+            } else {
+                markerKantor.setLatLng(koordinatKantor);
+            }
+            markerKantor.bindPopup(`<b>${lokasiKantorAktif.nama_tempat}</b><br>Batas Radius ${BATAS_RADIUS_METER}m`);
             
             const warnaLingkaran = dalamRadius ? '#10b981' : '#ef4444';
-            lingkaranRadius.setStyle({
-                color: warnaLingkaran,
-                fillColor: warnaLingkaran
-            });
+            if (!lingkaranRadius) {
+                lingkaranRadius = L.circle(koordinatKantor, {
+                    color: warnaLingkaran,
+                    fillColor: warnaLingkaran,
+                    fillOpacity: 0.18,
+                    radius: BATAS_RADIUS_METER
+                }).addTo(map);
+            } else {
+                lingkaranRadius.setLatLng(koordinatKantor);
+                lingkaranRadius.setStyle({ color: warnaLingkaran, fillColor: warnaLingkaran });
+            }
 
             if (posisiUserSaatIni) {
                 const koordinatSiswa = [posisiUserSaatIni.lat, posisiUserSaatIni.lng];
@@ -453,43 +609,6 @@
                 map.setView(koordinatKantor, 17);
             }
         }
-
-        // ==========================================
-        // 6. DROPDOWN TEMPAT PKL & NAMA SISWA
-        // ==========================================
-        function muatDaftarSiswa(indexTempat) {
-            const tempat = DAFTAR_TEMPAT_PKL[indexTempat];
-            pilihNama.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
-            [...tempat.siswa].sort().forEach(nama => {
-                const option = document.createElement('option');
-                option.value = nama;
-                option.textContent = nama;
-                pilihNama.appendChild(option);
-            });
-            cekStatusAbsenHariIni();
-        }
-
-        DAFTAR_TEMPAT_PKL.forEach((tempat, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = tempat.nama;
-            pilihTempat.appendChild(option);
-        });
-        muatDaftarSiswa(0);
-
-        pilihTempat.addEventListener('change', (e) => {
-            const index = e.target.value;
-            lokasiKantorAktif = { ...DAFTAR_TEMPAT_PKL[index] };
-            muatDaftarSiswa(index);
-            perbaruiStatusLokasi();
-        });
-
-        pilihNama.addEventListener('change', () => {
-            cekStatusAbsenHariIni();
-        });
-
-        const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('tanggal-sekarang').textContent = new Date().toLocaleDateString('id-ID', opsiTanggal);
 
         // ==========================================
         // 7. AKTIFKAN & GANTI KAMERA
@@ -545,6 +664,9 @@
             if (apakahModeIzinAtauSakit()) {
                 labelJurnal.textContent = `4. Alasan ${pilihJenis.value} (Wajib Diisi) *`;
                 inputJurnal.placeholder = `Tuliskan keterangan ${pilihJenis.value.toLowerCase()} secara jelas...`;
+                boxDokumentasiKegiatan.classList.add('hidden');
+                hapusFotoKegiatan();
+
                 infoKameraMode.className = "bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-xl text-xs flex justify-between items-center";
                 teksModeFoto.textContent = "📄 Foto Surat Keterangan Dokter / Surat Izin Orang Tua.";
                 
@@ -554,6 +676,8 @@
             } else {
                 labelJurnal.textContent = "4. Jurnal Kegiatan Hari Ini";
                 inputJurnal.placeholder = "Tuliskan singkat kegiatan/pekerjaan hari ini...";
+                boxDokumentasiKegiatan.classList.remove('hidden');
+
                 infoKameraMode.className = "bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-xl text-xs flex justify-between items-center";
                 teksModeFoto.textContent = "📸 Arahkan wajah ke kamera depan untuk selfie.";
                 
@@ -608,7 +732,7 @@
         }
 
         function perbaruiStatusLokasi() {
-            if (!posisiUserSaatIni) {
+            if (!posisiUserSaatIni || !lokasiKantorAktif) {
                 perbaruiVisualPeta(false);
                 return;
             }
@@ -618,8 +742,8 @@
             const jarak = hitungJarakHaversine(
                 posisiUserSaatIni.lat,
                 posisiUserSaatIni.lng,
-                lokasiKantorAktif.lat,
-                lokasiKantorAktif.lng
+                lokasiKantorAktif.latitude,
+                lokasiKantorAktif.longitude
             );
 
             jarakSaatIni = Math.round(jarak);
@@ -667,10 +791,10 @@
                 return;
             }
 
-            if (!posisiUserSaatIni) {
+            if (!posisiUserSaatIni || !lokasiKantorAktif) {
                 btnAbsen.disabled = true;
                 btnAbsen.className = "w-full py-3.5 px-4 rounded-xl font-bold text-white bg-slate-400 cursor-not-allowed transition-all shadow-md flex items-center justify-center gap-2";
-                btnAbsen.innerHTML = `<span>⏳</span><span>Menunggu Sinyal GPS...</span>`;
+                btnAbsen.innerHTML = `<span>⏳</span><span>Menunggu Sinyal GPS & Lokasi...</span>`;
                 return;
             }
 
@@ -689,7 +813,7 @@
         }
 
         // ==========================================
-        // 10. TANGKAP FOTO + WATERMARK + SIMPAN
+        // 10. TANGKAP FOTO + WATERMARK + UPLOAD DOKUMENTASI + SIMPAN
         // ==========================================
         function gambarWatermarkKeCanvas(ctx, width, height, info) {
             const tinggiBanner = Math.max(85, Math.round(height * 0.22));
@@ -736,11 +860,6 @@
                 return;
             }
 
-            if (SUPABASE_URL.includes('GANTI_DENGAN')) {
-                alert("Harap masukkan SUPABASE_URL dan SUPABASE_ANON_KEY Anda di dalam kode HTML terlebih dahulu!");
-                return;
-            }
-
             btnAbsen.disabled = true;
             btnAbsen.innerHTML = `<span>⏳</span><span>Memverifikasi & Mengunggah...</span>`;
 
@@ -751,6 +870,7 @@
             }
 
             try {
+                // 1. Tangkap foto selfie / surat dari kamera live
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
@@ -770,7 +890,7 @@
                 gambarWatermarkKeCanvas(ctx, canvas.width, canvas.height, {
                     nama: namaSiswa,
                     jenis: pilihJenis.value,
-                    tempat: lokasiKantorAktif.nama,
+                    tempat: lokasiKantorAktif.nama_tempat,
                     jarak: jarakSaatIni,
                     waktu: waktuLengkap,
                     koordinat: `${posisiUserSaatIni.lat.toFixed(5)}, ${posisiUserSaatIni.lng.toFixed(5)}`
@@ -779,40 +899,64 @@
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                 hasilFoto.src = dataUrl;
 
-                const blobFoto = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-
+                const blobFotoAbsen = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
                 const namaBersih = namaSiswa.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                const namaFile = `${Date.now()}_${pilihJenis.value.toLowerCase()}_${namaBersih}.jpg`;
+                const timestamp = Date.now();
+                const namaFileAbsen = `${timestamp}_${pilihJenis.value.toLowerCase()}_${namaBersih}.jpg`;
 
+                // 2. Unggah foto selfie/surat absen ke bucket 'foto-absen'
                 const { error: uploadError } = await supabaseClient
                     .storage
                     .from('foto-absen')
-                    .upload(namaFile, blobFoto, {
+                    .upload(namaFileAbsen, blobFotoAbsen, {
                         contentType: 'image/jpeg',
                         upsert: false
                     });
 
-                if (uploadError) throw new Error("Gagal upload foto: " + uploadError.message);
+                if (uploadError) throw new Error("Gagal upload foto absen: " + uploadError.message);
 
-                const { data: publicUrlData } = supabaseClient
+                const { data: publicUrlAbsen } = supabaseClient
                     .storage
                     .from('foto-absen')
-                    .getPublicUrl(namaFile);
+                    .getPublicUrl(namaFileAbsen);
 
-                const urlFotoPublik = publicUrlData.publicUrl;
+                // 3. Jika ada foto dokumentasi kegiatan, unggah juga ke bucket 'foto-absen'
+                let urlFotoKegiatanPublik = null;
+                if (blobFotoKegiatan) {
+                    const namaFileKegiatan = `${timestamp}_kegiatan_${namaBersih}.jpg`;
+                    const { error: uploadKegError } = await supabaseClient
+                        .storage
+                        .from('foto-absen')
+                        .upload(namaFileKegiatan, blobFotoKegiatan, {
+                            contentType: 'image/jpeg',
+                            upsert: false
+                        });
 
+                    if (uploadKegError) throw new Error("Gagal upload foto kegiatan: " + uploadKegError.message);
+
+                    const { data: publicUrlKeg } = supabaseClient
+                        .storage
+                        .from('foto-absen')
+                        .getPublicUrl(namaFileKegiatan);
+
+                    urlFotoKegiatanPublik = publicUrlKeg.publicUrl;
+                }
+
+                // 4. Simpan seluruh data ke database
                 const { error: insertError } = await supabaseClient
                     .from('absensi_pkl')
                     .insert([
                         {
                             nama_siswa: namaSiswa,
-                            tempat_pkl: lokasiKantorAktif.nama,
+                            tempat_pkl: lokasiKantorAktif.nama_tempat,
                             jenis_absen: pilihJenis.value,
                             latitude: posisiUserSaatIni.lat,
                             longitude: posisiUserSaatIni.lng,
                             jarak_meter: jarakSaatIni,
-                            foto_url: urlFotoPublik,
-                            jurnal_kegiatan: catatanJurnal || '-'
+                            foto_url: publicUrlAbsen.publicUrl,
+                            foto_kegiatan_url: urlFotoKegiatanPublik,
+                            jurnal_kegiatan: catatanJurnal || '-',
+                            status_validasi: 'Menunggu'
                         }
                     ]);
 
@@ -823,6 +967,7 @@
                 kartuHasil.classList.remove('hidden');
                 kartuHasil.scrollIntoView({ behavior: 'smooth' });
 
+                hapusFotoKegiatan();
                 await cekStatusAbsenHariIni();
 
             } catch (err) {
@@ -832,13 +977,11 @@
         });
 
         // ==========================================
-        // 11. AKTIFKAN SERVICE WORKER & TOMBOL INSTALL PWA
+        // 11. SERVICE WORKER & TOMBOL INSTALL PWA
         // ==========================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(() => console.log('Service Worker aktif'))
-                    .catch(err => console.log('Gagal daftar SW:', err));
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
             });
         }
 
@@ -855,13 +998,12 @@
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                btnInstallPwa.classList.add('hidden');
-            }
+            if (outcome === 'accepted') btnInstallPwa.classList.add('hidden');
             deferredPrompt = null;
         });
 
         // Jalankan aplikasi
+        muatDataMasterDariDatabase();
         periksaJadwalJam();
         mulaiKamera('user');
         pantauGPS();
