@@ -21,7 +21,7 @@
             </div>
             <div>
                 <h2 class="text-lg font-bold text-slate-800">Akses Khusus Guru Pembimbing</h2>
-                <p class="text-xs text-slate-500 mt-1">Masukkan kata sandi untuk melihat rekap absensi dan foto siswa PKL.</p>
+                <p class="text-xs text-slate-500 mt-1">Masukkan kata sandi untuk melihat rekap absensi, jurnal, dan surat izin siswa PKL.</p>
             </div>
             
             <form id="form-login-guru" class="space-y-3 text-left">
@@ -49,7 +49,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
                 <div>
                     <h1 class="text-xl font-bold tracking-wide">Dashboard Monitoring PKL</h1>
-                    <p class="text-blue-200 text-xs">Rekap Kehadiran, Validasi Lokasi & Jurnal Harian Siswa</p>
+                    <p class="text-blue-200 text-xs">Rekap Kehadiran, Jurnal Harian & Pengajuan Izin/Sakit Siswa</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button onclick="muatDataAbsensi()" class="bg-blue-600 hover:bg-blue-500 border border-blue-400 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5">
@@ -67,28 +67,32 @@
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-            <!-- Kartu Ringkasan Statistik -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Kartu Ringkasan Statistik (5 Kolom) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <p class="text-xs text-slate-500 font-medium">Total Data Ditampilkan</p>
+                    <p class="text-xs text-slate-500 font-medium">Total Rekaman</p>
                     <p class="text-2xl font-bold text-slate-800 mt-1" id="stat-total">0</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                     <p class="text-xs text-slate-500 font-medium">Absen Masuk</p>
-                    <p class="text-2xl font-bold text-blue-600 mt-1" id="stat-masuk">0</p>
+                    <p class="text-2xl font-bold text-emerald-600 mt-1" id="stat-masuk">0</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                     <p class="text-xs text-slate-500 font-medium">Absen Pulang</p>
                     <p class="text-2xl font-bold text-amber-600 mt-1" id="stat-pulang">0</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <p class="text-xs text-slate-500 font-medium">Rata-rata Jarak GPS</p>
-                    <p class="text-2xl font-bold text-emerald-600 mt-1" id="stat-jarak">0 m</p>
+                    <p class="text-xs text-slate-500 font-medium">Izin / Sakit</p>
+                    <p class="text-2xl font-bold text-rose-600 mt-1" id="stat-izinsakit">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 col-span-2 sm:col-span-1">
+                    <p class="text-xs text-slate-500 font-medium">Rata-rata Jarak Hadir</p>
+                    <p class="text-2xl font-bold text-blue-600 mt-1" id="stat-jarak">0 m</p>
                 </div>
             </div>
 
-            <!-- Panel Filter & Pencarian -->
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Panel Filter & Pencarian (5 Kolom) -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Cari Nama Siswa</label>
                     <input type="text" id="filter-nama" placeholder="Ketik nama siswa..."
@@ -99,6 +103,17 @@
                     <select id="filter-tempat"
                         class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Semua Tempat PKL</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Filter Status</label>
+                    <select id="filter-jenis"
+                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Semua Status</option>
+                        <option value="Masuk">🟢 Masuk</option>
+                        <option value="Pulang">🟠 Pulang</option>
+                        <option value="Izin">🔵 Izin</option>
+                        <option value="Sakit">🔴 Sakit</option>
                     </select>
                 </div>
                 <div>
@@ -122,10 +137,10 @@
                                 <th class="py-3.5 px-4">Waktu (WITA)</th>
                                 <th class="py-3.5 px-4">Nama Siswa</th>
                                 <th class="py-3.5 px-4">Tempat PKL</th>
-                                <th class="py-3.5 px-4">Jenis</th>
-                                <th class="py-3.5 px-4">Jarak & Peta</th>
-                                <th class="py-3.5 px-4">Jurnal Kegiatan</th>
-                                <th class="py-3.5 px-4 text-center">Foto Selfie</th>
+                                <th class="py-3.5 px-4">Status</th>
+                                <th class="py-3.5 px-4">Lokasi & Jarak</th>
+                                <th class="py-3.5 px-4">Jurnal / Keterangan</th>
+                                <th class="py-3.5 px-4 text-center">Bukti Foto</th>
                                 <th class="py-3.5 px-4 text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -141,9 +156,9 @@
         </main>
     </div>
 
-    <!-- Modal Perbesar Foto Selfie -->
+    <!-- Modal Perbesar Foto Selfie / Surat -->
     <div id="modal-foto" onclick="tutupModal()" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4">
-        <div onclick="event.stopPropagation()" class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+        <div onclick="event.stopPropagation()" class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
             <div class="p-4 border-b border-slate-200 flex justify-between items-center">
                 <div>
                     <h3 class="font-bold text-slate-800" id="modal-nama">Nama Siswa</h3>
@@ -152,7 +167,7 @@
                 <button onclick="tutupModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2">&times;</button>
             </div>
             <div class="bg-slate-900 flex items-center justify-center">
-                <img id="modal-img" src="" alt="Foto Absen" class="max-h-[70vh] w-auto object-contain">
+                <img id="modal-img" src="" alt="Bukti Foto" class="max-h-[75vh] w-auto object-contain">
             </div>
         </div>
     </div>
@@ -161,10 +176,8 @@
         // ==========================================
         // 1. KONFIGURASI SANDI GURU & SUPABASE
         // ==========================================
-        // Ubah kata sandi di bawah ini sesuai keinginan Anda
         const PASSWORD_GURU = 'guru2026';
 
-        // Ganti dengan Project URL & Anon Public Key dari Supabase Anda
         const SUPABASE_URL = 'https://xpgijautojdibfqvtzao.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwZ2lqYXV0b2pkaWJmcXZ0emFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NDc1OTgsImV4cCI6MjExMDIyMzU5OH0.VFNskVxPJJ8lmo-c6nJybGiBEa9Uw-uOX89IM78Znpw';
 
@@ -217,6 +230,7 @@
         const tabelBody = document.getElementById('tabel-body');
         const filterNama = document.getElementById('filter-nama');
         const filterTempat = document.getElementById('filter-tempat');
+        const filterJenis = document.getElementById('filter-jenis');
         const filterTanggal = document.getElementById('filter-tanggal');
 
         let semuaDataAbsensi = [];
@@ -265,20 +279,37 @@
         function terapkanFilter() {
             const kataKunciNama = filterNama.value.toLowerCase().trim();
             const tempatDipilih = filterTempat.value;
+            const jenisDipilih = filterJenis.value;
             const tanggalDipilih = filterTanggal.value;
 
             dataTersaring = semuaDataAbsensi.filter(item => {
                 const cocokNama = item.nama_siswa.toLowerCase().includes(kataKunciNama);
                 const cocokTempat = tempatDipilih === "" || item.tempat_pkl === tempatDipilih;
+                const cocokJenis = jenisDipilih === "" || item.jenis_absen === jenisDipilih;
                 
                 const tanggalLokalItem = new Date(item.created_at).toLocaleDateString('en-CA');
                 const cocokTanggal = tanggalDipilih === "" || tanggalLokalItem === tanggalDipilih;
 
-                return cocokNama && cocokTempat && cocokTanggal;
+                return cocokNama && cocokTempat && cocokJenis && cocokTanggal;
             });
 
             renderTabel(dataTersaring);
             perbaruiStatistik(dataTersaring);
+        }
+
+        function dapatkanBadgeStatus(jenis) {
+            switch (jenis) {
+                case 'Masuk':
+                    return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Masuk</span>`;
+                case 'Pulang':
+                    return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Pulang</span>`;
+                case 'Izin':
+                    return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Izin</span>`;
+                case 'Sakit':
+                    return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Sakit</span>`;
+                default:
+                    return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">${escapeHTML(jenis)}</span>`;
+            }
         }
 
         function renderTabel(data) {
@@ -292,14 +323,16 @@
                 const tglStr = waktuObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
                 const jamStr = waktuObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-                const badgeJenis = item.jenis_absen === 'Masuk'
-                    ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Masuk</span>`
-                    : `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Pulang</span>`;
-
+                const badgeJenis = dapatkanBadgeStatus(item.jenis_absen);
                 const linkGoogleMaps = `https://www.google.com/maps?q=${item.latitude},${item.longitude}`;
 
+                const adalahIzinSakit = item.jenis_absen === 'Izin' || item.jenis_absen === 'Sakit';
+                const infoJarak = adalahIzinSakit
+                    ? `<div class="text-xs font-medium text-slate-500">Luar Radius (${item.jarak_meter}m)</div>`
+                    : `<div class="text-xs font-semibold text-emerald-700">${item.jarak_meter} meter</div>`;
+
                 return `
-                    <tr class="hover:bg-slate-50 transition">
+                    <tr class="hover:bg-slate-50 transition ${adalahIzinSakit ? 'bg-rose-50/30' : ''}">
                         <td class="py-3 px-4 whitespace-nowrap">
                             <div class="font-semibold text-slate-800">${tglStr}</div>
                             <div class="text-xs text-slate-500">${jamStr} WITA</div>
@@ -308,7 +341,7 @@
                         <td class="py-3 px-4 text-slate-600">${escapeHTML(item.tempat_pkl)}</td>
                         <td class="py-3 px-4">${badgeJenis}</td>
                         <td class="py-3 px-4 whitespace-nowrap">
-                            <div class="text-xs font-semibold text-emerald-700">${item.jarak_meter} meter</div>
+                            ${infoJarak}
                             <a href="${linkGoogleMaps}" target="_blank" class="text-[11px] text-blue-600 hover:underline flex items-center gap-1 mt-0.5">
                                 📍 Cek Titik Maps
                             </a>
@@ -319,9 +352,9 @@
                             </p>
                         </td>
                         <td class="py-3 px-4 text-center">
-                            <button onclick="bukaModal('${item.foto_url}', '${escapeHTML(item.nama_siswa)}', '${tglStr} • ${jamStr} WITA (${escapeHTML(item.tempat_pkl)})')"
+                            <button onclick="bukaModal('${item.foto_url}', '${escapeHTML(item.nama_siswa)} [${escapeHTML(item.jenis_absen)}]', '${tglStr} • ${jamStr} WITA (${escapeHTML(item.tempat_pkl)})')"
                                 class="inline-block group relative rounded-lg overflow-hidden border border-slate-300 w-12 h-12 shadow-sm hover:ring-2 hover:ring-blue-500 transition">
-                                <img src="${item.foto_url}" alt="Selfie" class="w-full h-full object-cover">
+                                <img src="${item.foto_url}" alt="Bukti Foto" class="w-full h-full object-cover">
                             </button>
                         </td>
                         <td class="py-3 px-4 text-center whitespace-nowrap">
@@ -340,10 +373,12 @@
             document.getElementById('stat-total').textContent = data.length;
             document.getElementById('stat-masuk').textContent = data.filter(d => d.jenis_absen === 'Masuk').length;
             document.getElementById('stat-pulang').textContent = data.filter(d => d.jenis_absen === 'Pulang').length;
+            document.getElementById('stat-izinsakit').textContent = data.filter(d => d.jenis_absen === 'Izin' || d.jenis_absen === 'Sakit').length;
             
-            if (data.length > 0) {
-                const totalJarak = data.reduce((sum, d) => sum + (d.jarak_meter || 0), 0);
-                document.getElementById('stat-jarak').textContent = Math.round(totalJarak / data.length) + ' m';
+            const dataHadir = data.filter(d => d.jenis_absen === 'Masuk' || d.jenis_absen === 'Pulang');
+            if (dataHadir.length > 0) {
+                const totalJarak = dataHadir.reduce((sum, d) => sum + (d.jarak_meter || 0), 0);
+                document.getElementById('stat-jarak').textContent = Math.round(totalJarak / dataHadir.length) + ' m';
             } else {
                 document.getElementById('stat-jarak').textContent = '0 m';
             }
@@ -352,23 +387,24 @@
         function resetFilter() {
             filterNama.value = "";
             filterTempat.value = "";
+            filterJenis.value = "";
             filterTanggal.value = "";
             terapkanFilter();
         }
 
         filterNama.addEventListener('input', terapkanFilter);
         filterTempat.addEventListener('change', terapkanFilter);
+        filterJenis.addEventListener('change', terapkanFilter);
         filterTanggal.addEventListener('change', terapkanFilter);
 
         // ==========================================
         // 5. FUNGSI HAPUS DATA PER BARIS
         // ==========================================
         async function hapusDataAbsen(id, namaSiswa, fotoUrl) {
-            const konfirmasi = confirm(`Yakin ingin menghapus data absensi milik "${namaSiswa}"?\nData dan foto yang dihapus tidak dapat dikembalikan.`);
+            const konfirmasi = confirm(`Yakin ingin menghapus data milik "${namaSiswa}"?\nData dan bukti foto yang dihapus tidak dapat dikembalikan.`);
             if (!konfirmasi) return;
 
             try {
-                // 1. Hapus baris dari tabel 'absensi_pkl'
                 const { error: deleteError } = await supabaseClient
                     .from('absensi_pkl')
                     .delete()
@@ -376,7 +412,6 @@
 
                 if (deleteError) throw new Error(deleteError.message);
 
-                // 2. Hapus file foto dari Storage bucket 'foto-absen' agar hemat ruang
                 if (fotoUrl && fotoUrl.includes('/foto-absen/')) {
                     const namaFile = fotoUrl.split('/foto-absen/')[1];
                     if (namaFile) {
@@ -384,7 +419,6 @@
                     }
                 }
 
-                // 3. Perbarui tampilan tabel di layar tanpa perlu reload penuh
                 semuaDataAbsensi = semuaDataAbsensi.filter(item => item.id !== id);
                 isiDropdownTempat(semuaDataAbsensi);
                 terapkanFilter();
@@ -414,7 +448,7 @@
                 return;
             }
 
-            const headers = ["No", "Tanggal", "Jam (WITA)", "Nama Siswa", "Tempat PKL", "Jenis Absen", "Jarak (Meter)", "Latitude", "Longitude", "Jurnal Kegiatan", "Link Foto"];
+            const headers = ["No", "Tanggal", "Jam (WITA)", "Nama Siswa", "Tempat PKL", "Status", "Jarak (Meter)", "Latitude", "Longitude", "Jurnal / Keterangan", "Link Bukti Foto"];
             
             const rows = dataTersaring.map((item, index) => {
                 const waktuObj = new Date(item.created_at);
