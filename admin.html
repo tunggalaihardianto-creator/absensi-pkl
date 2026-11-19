@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Pokja PKL - Pusat Kendali & Pengawasan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800">
+
+    <!-- ========================================== -->
+    <!-- LAYAR KUNCI ADMIN POKJA PKL                -->
+    <!-- ========================================== -->
+    <div id="layar-kunci" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-5">
+            <div class="w-14 h-14 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center mx-auto text-2xl">
+                🛡️
+            </div>
+            <div>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 uppercase tracking-wider">Administrator Pokja PKL</span>
+                <h2 class="text-lg font-bold text-slate-800 mt-2">Pusat Kendali & Pengawasan</h2>
+                <p class="text-xs text-slate-500 mt-1">Masukkan kata sandi Admin untuk mengelola akun guru pembimbing, tempat PKL, dan memantau radar kehadiran.</p>
+            </div>
+            
+            <form id="form-login-admin" class="space-y-3 text-left">
+                <div>
+                    <input type="password" id="input-password-admin" placeholder="Kata sandi Admin..." required autofocus
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                    <p id="pesan-error-sandi" class="hidden text-xs text-red-600 text-center mt-1.5 font-medium">
+                        Kata sandi Admin salah. Silakan coba lagi.
+                    </p>
+                </div>
+                <button type="submit"
+                    class="w-full py-3 px-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] transition shadow-md text-sm">
+                    Masuk Panel Admin
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- KONTEN UTAMA DASHBOARD ADMIN               -->
+    <!-- ========================================== -->
+    <div id="konten-dashboard" class="hidden">
+        <!-- Navbar Atas -->
+        <nav class="bg-slate-900 text-white shadow-md border-b border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-bold shadow">🛡️</div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-wide" id="header-nama-sekolah">Admin Pokja PKL</h1>
+                        <p class="text-slate-400 text-xs">Pengawasan Global 200 Siswa, Pembagian Guru Pembimbing & Manajemen Database</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <button onclick="muatSemuaDataAdmin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                        <span>🔄</span> Refresh
+                    </button>
+                    <button onclick="bukaModalInfoSekolah()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-2 rounded-lg shadow transition flex items-center gap-1.5">
+                        <span>🏫</span> Info Sekolah
+                    </button>
+                    <button onclick="downloadCSVGlobal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg shadow transition flex items-center gap-1.5">
+                        <span>📥</span> Ekspor Semua Data
+                    </button>
+                    <button onclick="kunciLayar()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                        <span>🔒</span> Keluar
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+            <!-- Kartu Statistik Eksekutif Hari Ini -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs text-slate-500 font-medium">Total Siswa Terdaftar</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1" id="stat-total-siswa">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs text-slate-500 font-medium">Hadir Hari Ini</p>
+                    <p class="text-2xl font-bold text-emerald-600 mt-1" id="stat-hadir-hari-ini">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs text-slate-500 font-medium">Izin / Sakit Hari Ini</p>
+                    <p class="text-2xl font-bold text-blue-600 mt-1" id="stat-izin-hari-ini">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-rose-200 bg-rose-50/30">
+                    <p class="text-xs text-rose-700 font-bold">Belum Absen (Alpa)</p>
+                    <p class="text-2xl font-extrabold text-rose-600 mt-1" id="stat-alpa-hari-ini">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-amber-200 bg-amber-50/30 col-span-2 sm:col-span-1">
+                    <p class="text-xs text-amber-800 font-bold">Indikasi Anomali GPS</p>
+                    <p class="text-2xl font-extrabold text-amber-600 mt-1" id="stat-anomali-gps">0</p>
+                </div>
+            </div>
+
+            <!-- Navigasi Tab Admin -->
+            <div class="flex flex-wrap border-b border-slate-300 gap-2">
+                <button id="tab-btn-radar" onclick="gantiTabAdmin('radar')"
+                    class="px-4 py-2.5 text-sm font-bold rounded-t-xl bg-white text-rose-700 border-t border-x border-slate-300 -mb-px transition">
+                    🚨 Radar Pengawasan Hari Ini
+                </button>
+                <button id="tab-btn-guru" onclick="gantiTabAdmin('guru')"
+                    class="px-4 py-2.5 text-sm font-semibold rounded-t-xl bg-slate-200 text-slate-600 hover:bg-slate-300/70 transition">
+                    👨‍🏫 Guru Pembimbing & Plotting
+                </button>
+                <button id="tab-btn-master" onclick="gantiTabAdmin('master')"
+                    class="px-4 py-2.5 text-sm font-semibold rounded-t-xl bg-slate-200 text-slate-600 hover:bg-slate-300/70 transition">
+                    🏢 Tempat PKL & Siswa
+                </button>
+                <button id="tab-btn-log" onclick="gantiTabAdmin('log')"
+                    class="px-4 py-2.5 text-sm font-semibold rounded-t-xl bg-slate-200 text-slate-600 hover:bg-slate-300/70 transition">
+                    🗄️ Semua Log & Hapus Massal
+                </button>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 1: RADAR PENGAWASAN HARI INI (ALPA & FAKE GPS) -->
+            <!-- ========================================== -->
+            <div id="panel-tab-radar" class="bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-slate-200 p-5 -mt-6 space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Radar Siswa Belum Absen Hari Ini -->
+                    <div class="border border-rose-200 rounded-xl overflow-hidden">
+                        <div class="bg-rose-50 px-4 py-3 border-b border-rose-200 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-rose-900 text-sm">⚠️ Siswa Belum Absen / Lapor Hari Ini</h3>
+                                <p class="text-[11px] text-rose-700">Daftar siswa terdaftar yang belum mengirim Masuk, Izin, maupun Sakit hari ini.</p>
+                            </div>
+                            <span id="badge-jml-alpa" class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-600 text-white">0</span>
+                        </div>
+                        <div id="list-siswa-alpa" class="divide-y divide-slate-200 max-h-96 overflow-y-auto text-sm">
+                            <p class="p-6 text-center text-slate-400 text-xs">Memeriksa data hari ini...</p>
+                        </div>
+                    </div>
+
+                    <!-- Radar Anomali Fake GPS & Kinerja Validasi Guru -->
+                    <div class="space-y-6">
+                        <div class="border border-amber-200 rounded-xl overflow-hidden">
+                            <div class="bg-amber-50 px-4 py-3 border-b border-amber-200 flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-bold text-amber-900 text-sm">🚨 Peringatan Anomali / Fake GPS</h3>
+                                    <p class="text-[11px] text-amber-800">Rekaman yang terdeteksi memiliki sinyal GPS tidak wajar.</p>
+                                </div>
+                                <span id="badge-jml-anomali" class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-amber-600 text-white">0</span>
+                            </div>
+                            <div id="list-anomali-gps" class="divide-y divide-slate-200 max-h-48 overflow-y-auto text-xs">
+                                <p class="p-4 text-center text-slate-400">Tidak ada indikasi anomali GPS.</p>
+                            </div>
+                        </div>
+
+                        <!-- Monitoring Kinerja ACC Jurnal Per Guru Pembimbing -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden">
+                            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200">
+                                <h3 class="font-bold text-slate-800 text-xs uppercase">📊 Progres Validasi Jurnal Per Guru Pembimbing</h3>
+                            </div>
+                            <div id="list-kinerja-guru" class="divide-y divide-slate-200 max-h-48 overflow-y-auto text-xs">
+                                <p class="p-4 text-center text-slate-400">Memuat statistik guru...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 2: MANAJEMEN GURU PEMBIMBING & PLOTTING -->
+            <!-- ========================================== -->
+            <div id="panel-tab-guru" class="hidden bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-slate-200 p-5 -mt-6 space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Form Tambah Guru Pembimbing -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                        <h3 class="font-bold text-slate-800 text-sm">👨‍🏫 Tambah Akun Guru Pembimbing</h3>
+                        <p class="text-[11px] text-slate-500">Setiap guru mendapatkan PIN login khusus agar hanya melihat siswa bimbingannya di halaman <code>rekap.html</code>.</p>
+                        <form id="form-tambah-guru" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap & Gelar *</label>
+                                <input type="text" id="input-nama-guru" placeholder="Contoh: Tunggal Hardianto, S.Pd" required
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">NIP / NUPTK *</label>
+                                <input type="text" id="input-nip-guru" placeholder="NIP. 19900920 202321 1 004" required
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">PIN / Kata Sandi Login Guru *</label>
+                                <input type="text" id="input-pin-guru" placeholder="Contoh: guru123" required
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <button type="submit" id="btn-simpan-guru"
+                                class="w-full py-2.5 px-4 rounded-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 text-xs transition shadow-sm">
+                                + Simpan Akun Guru
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Daftar Guru & Wilayah Bimbingannya -->
+                    <div class="lg:col-span-2 border border-slate-200 rounded-xl overflow-hidden">
+                        <div class="bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 uppercase">
+                            Daftar Guru Pembimbing & Plotting Lokasi (<span id="jumlah-guru">0</span>)
+                        </div>
+                        <div id="list-master-guru" class="divide-y divide-slate-200 max-h-[450px] overflow-y-auto">
+                            <p class="p-6 text-center text-slate-400 text-xs">Memuat daftar guru...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 3: KELOLA MASTER TEMPAT PKL & SISWA    -->
+            <!-- ========================================== -->
+            <div id="panel-tab-master" class="hidden bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-slate-200 p-5 -mt-6 space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Kolom Kiri: Tempat PKL -->
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-sm">🏢 Tambah Tempat PKL & Plotting Guru</h3>
+                            <form id="form-tambah-tempat" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Perusahaan / Instansi *</label>
+                                    <input type="text" id="input-nama-tempat" placeholder="Contoh: Kantor Bupati Bulungan" required
+                                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Guru Pembimbing Penanggung Jawab *</label>
+                                    <select id="select-guru-tempat" required
+                                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">-- Pilih Guru Pembimbing --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-xs font-semibold text-slate-600">Koordinat Google Maps (Lat, Lng) *</label>
+                                        <button type="button" onclick="ambilKoordinatGPS('input-koordinat-gabungan')" class="text-[11px] text-blue-600 font-semibold hover:underline">
+                                            📍 Ambil Lokasi Saya
+                                        </button>
+                                    </div>
+                                    <input type="text" id="input-koordinat-gabungan" placeholder="2.837541, 117.365312" required
+                                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+
+                                <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+                                    <p class="text-[11px] font-bold text-slate-700 uppercase">⏰ Pengaturan Jam Kerja (WITA)</p>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Masuk Dibuka</label>
+                                            <input type="time" id="input-jam-masuk-mulai" value="06:00" required class="w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-mono">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-semibold text-orange-600 mb-1">Batas Telat</label>
+                                            <input type="time" id="input-batas-terlambat" value="07:30" required class="w-full px-2 py-1.5 rounded border border-orange-300 bg-orange-50/40 text-xs font-mono">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-semibold text-blue-600 mb-1">Mulai Pulang</label>
+                                            <input type="time" id="input-jam-pulang-mulai" value="15:00" required class="w-full px-2 py-1.5 rounded border border-blue-300 bg-blue-50/40 text-xs font-mono">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" id="btn-simpan-tempat"
+                                    class="w-full py-2.5 px-4 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 text-xs transition shadow-sm">
+                                    + Simpan Tempat PKL
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-xl overflow-hidden">
+                            <div class="bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 uppercase">
+                                Daftar Tempat PKL (<span id="jumlah-tempat">0</span>)
+                            </div>
+                            <div class="divide-y divide-slate-200 max-h-96 overflow-y-auto" id="list-master-tempat"></div>
+                        </div>
+                    </div>
+
+                    <!-- Kolom Kanan: Siswa PKL -->
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-sm">🎓 Tambah Siswa PKL Baru</h3>
+                            <form id="form-tambah-siswa" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Pilih Tempat Penempatan PKL *</label>
+                                    <select id="select-tempat-siswa" required
+                                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <option value="">-- Pilih Tempat PKL --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap Siswa (Satu nama per baris) *</label>
+                                    <textarea id="input-nama-siswa-baru" rows="4" required
+                                        placeholder="Ahmad Fauzi&#10;Budi Santoso&#10;Citra Lestari"
+                                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                                </div>
+                                <button type="submit" id="btn-simpan-siswa"
+                                    class="w-full py-2.5 px-4 rounded-lg font-bold text-white bg-emerald-600 hover:bg-emerald-700 text-xs transition shadow-sm">
+                                    + Simpan Nama Siswa
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-xl overflow-hidden">
+                            <div class="bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 uppercase flex justify-between items-center">
+                                <span>Daftar Siswa (<span id="jumlah-siswa">0</span>)</span>
+                                <select id="filter-master-siswa-tempat" class="text-[11px] font-normal px-2 py-0.5 rounded border border-slate-300 bg-white">
+                                    <option value="">Semua Tempat</option>
+                                </select>
+                            </div>
+                            <div class="divide-y divide-slate-200 max-h-96 overflow-y-auto" id="list-master-siswa"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 4: SEMUA LOG GLOBAL & HAPUS MASSAL     -->
+            <!-- ========================================== -->
+            <div id="panel-tab-log" class="hidden bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-slate-200 overflow-hidden -mt-6">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Cari Siswa / Tempat</label>
+                        <input type="text" id="filter-log-global" placeholder="Ketik nama..."
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Dari Tanggal</label>
+                        <input type="date" id="filter-tgl-mulai"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Sampai Tanggal</label>
+                        <input type="date" id="filter-tgl-selesai"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="resetFilterLog()" class="w-full py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700">
+                            Reset Filter
+                        </button>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="btn-hapus-massal" onclick="hapusMassalTersaring()"
+                            class="w-full py-2 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs">
+                            🗑️ Hapus Massal Sesuai Filter
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
+                                <th class="py-3 px-4">Waktu (WITA)</th>
+                                <th class="py-3 px-4">Siswa & Tempat PKL</th>
+                                <th class="py-3 px-4">Status</th>
+                                <th class="py-3 px-4">Jurnal / Keterangan</th>
+                                <th class="py-3 px-4">Validasi Guru</th>
+                                <th class="py-3 px-4 text-center">Foto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-log-admin" class="divide-y divide-slate-200 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal Edit Tempat PKL & Plotting Guru -->
+    <div id="modal-edit-tempat" onclick="tutupModalEditTempat()" class="hidden fixed inset-0 bg-slate-900/75 z-50 flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                <h3 class="font-bold text-slate-800 text-base">✏️ Edit Tempat PKL, Guru & Jam Kerja</h3>
+                <button onclick="tutupModalEditTempat()" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
+            </div>
+            <form id="form-edit-tempat" class="space-y-3">
+                <input type="hidden" id="edit-tempat-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Perusahaan / Instansi *</label>
+                    <input type="text" id="edit-nama-tempat" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Guru Pembimbing Penanggung Jawab *</label>
+                    <select id="edit-guru-tempat" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"></select>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-600">Koordinat Google Maps *</label>
+                        <button type="button" onclick="ambilKoordinatGPS('edit-koordinat-gabungan')" class="text-[11px] text-blue-600 font-semibold hover:underline">📍 Gunakan GPS Saya</button>
+                    </div>
+                    <input type="text" id="edit-koordinat-gabungan" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono">
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 mb-1">Masuk Dibuka</label>
+                        <input type="time" id="edit-jam-masuk-mulai" required class="w-full px-2 py-1.5 rounded border border-slate-300 bg-white text-xs font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-orange-600 mb-1">Batas Telat</label>
+                        <input type="time" id="edit-batas-terlambat" required class="w-full px-2 py-1.5 rounded border border-orange-300 bg-white text-xs font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-blue-600 mb-1">Mulai Pulang</label>
+                        <input type="time" id="edit-jam-pulang-mulai" required class="w-full px-2 py-1.5 rounded border border-blue-300 bg-white text-xs font-mono">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="tutupModalEditTempat()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold">Batal</button>
+                    <button type="submit" id="btn-update-tempat" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Pengaturan Info Sekolah -->
+    <div id="modal-info-sekolah" onclick="tutupModalInfoSekolah()" class="hidden fixed inset-0 bg-slate-900/75 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div onclick="event.stopPropagation()" class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                <h3 class="font-bold text-slate-800 text-base">🏫 Pengaturan Kop & Info Sekolah</h3>
+                <button onclick="tutupModalInfoSekolah()" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
+            </div>
+            <form id="form-info-sekolah" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Instansi / Dinas *</label>
+                    <input type="text" id="set-instansi-atas" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Sekolah *</label>
+                        <input type="text" id="set-nama-sekolah" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Kota / Kabupaten *</label>
+                        <input type="text" id="set-kota" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Alamat Lengkap Sekolah *</label>
+                    <input type="text" id="set-alamat-sekolah" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Nama Kepala Sekolah *</label>
+                        <input type="text" id="set-nama-kepsek" required class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">NIP Kepala Sekolah *</label>
+                        <input type="text" id="set-nip-kepsek" required class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-mono">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="tutupModalInfoSekolah()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold">Batal</button>
+                    <button type="submit" id="btn-simpan-info-sekolah" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">Simpan Pengaturan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Preview Foto -->
+    <div id="modal-foto" onclick="tutupModal()" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-slate-800" id="modal-nama">Nama Siswa</h3>
+                    <p class="text-xs text-slate-500" id="modal-info">Info</p>
+                </div>
+                <button onclick="tutupModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2">&times;</button>
+            </div>
+            <div class="bg-slate-900 flex items-center justify-center">
+                <img id="modal-img" src="" alt="Bukti Foto" class="max-h-[75vh] w-auto object-contain">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. KONFIGURASI ADMIN & SUPABASE
+        // ==========================================
+        const PASSWORD_ADMIN = 'adminpkl2026';
+
+        const SUPABASE_URL = 'https://xpgijautojdibfqvtzao.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwZ2lqYXV0b2pkaWJmcXZ0emFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NDc1OTgsImV4cCI6MjExMDIyMzU5OH0.VFNskVxPJJ8lmo-c6nJybGiBEa9Uw-uOX89IM78Znpw';
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let infoSekolahAktif = {
+            instansi_atas: "PEMERINTAH PROVINSI KALIMANTAN UTARA • DINAS PENDIDIKAN DAN KEBUDAYAAN",
+            nama_sekolah: "SMK NEGERI 3 TANJUNG SELOR",
+            alamat_sekolah: "Tanjung Selor, Kabupaten Bulungan, Kalimantan Utara",
+            kota: "Tanjung Selor",
+            nama_kepsek: "Tuti Wurniati, S.Pd",
+            nip_kepsek: "NIP. 19791014 200902 2 003",
+            nama_guru: "Koordinator Pokja PKL",
+            nip_guru: "-"
+        };
+
+        let daftarGuru = [];
+        let daftarTempat = [];
+        let daftarSiswa = [];
+        let semuaLogAbsensi = [];
+        let logTersaring = [];
+
+        // ==========================================
+        // 2. LOGIN & NAVIGASI TAB
+        // ==========================================
+        const layarKunci = document.getElementById('layar-kunci');
+        const kontenDashboard = document.getElementById('konten-dashboard');
+
+        function bukaDashboard() {
+            layarKunci.classList.add('hidden');
+            kontenDashboard.classList.remove('hidden');
+            sessionStorage.setItem('akses_admin_pkl', 'terbuka');
+            muatSemuaDataAdmin();
+        }
+
+        function kunciLayar() {
+            sessionStorage.removeItem('akses_admin_pkl');
+            document.getElementById('input-password-admin').value = '';
+            kontenDashboard.classList.add('hidden');
+            layarKunci.classList.remove('hidden');
+        }
+
+        if (sessionStorage.getItem('akses_admin_pkl') === 'terbuka') {
+            bukaDashboard();
+        }
+
+        document.getElementById('form-login-admin').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (document.getElementById('input-password-admin').value === PASSWORD_ADMIN) {
+                document.getElementById('pesan-error-sandi').classList.add('hidden');
+                bukaDashboard();
+            } else {
+                document.getElementById('pesan-error-sandi').classList.remove('hidden');
+            }
+        });
+
+        function gantiTabAdmin(namaTab) {
+            const tabs = ['radar', 'guru', 'master', 'log'];
+            const warna = { radar: 'text-rose-700', guru: 'text-indigo-700', master: 'text-blue-700', log: 'text-slate-900' };
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const panel = document.getElementById(`panel-tab-${t}`);
+                if (t === namaTab) {
+                    btn.className = `px-4 py-2.5 text-sm font-bold rounded-t-xl bg-white ${warna[t]} border-t border-x border-slate-300 -mb-px transition`;
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.className = "px-4 py-2.5 text-sm font-semibold rounded-t-xl bg-slate-200 text-slate-600 hover:bg-slate-300/70 transition";
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        // ==========================================
+        // 3. MUAT SEMUA DATA GLOBAL
+        // ==========================================
+        async function muatSemuaDataAdmin() {
+            if (SUPABASE_URL.includes('GANTI_DENGAN')) {
+                alert("Harap isi SUPABASE_URL dan SUPABASE_ANON_KEY di admin.html!");
+                return;
+            }
+
+            const [resSekolah, resGuru, resTempat, resSiswa, resLog] = await Promise.all([
+                supabaseClient.from('pengaturan_sekolah').select('*').eq('id', 1).single(),
+                supabaseClient.from('master_guru_pkl').select('*').order('nama_guru', { ascending: true }),
+                supabaseClient.from('master_tempat_pkl').select('*, master_guru_pkl(nama_guru)').order('nama_tempat', { ascending: true }).limit(1000),
+                supabaseClient.from('master_siswa_pkl').select('*, master_tempat_pkl(nama_tempat, guru_id)').order('nama_siswa', { ascending: true }).limit(2000),
+                supabaseClient.from('absensi_pkl').select('*').order('created_at', { ascending: false }).limit(10000)
+            ]);
+
+            if (resSekolah.data) {
+                infoSekolahAktif = resSekolah.data;
+                document.getElementById('header-nama-sekolah').textContent = `Admin Pokja PKL • ${infoSekolahAktif.nama_sekolah}`;
+            }
+
+            daftarGuru = resGuru.data || [];
+            daftarTempat = resTempat.data || [];
+            daftarSiswa = resSiswa.data || [];
+            semuaLogAbsensi = resLog.data || [];
+
+            renderRadarPengawasan();
+            renderMasterGuru();
+            renderMasterTempat();
+            renderMasterSiswa();
+            terapkanFilterLog();
+        }
+
+        // ==========================================
+        // 4. RADAR PENGAWASAN HARI INI (ALPA, FAKE GPS, KINERJA GURU)
+        // ==========================================
+        function renderRadarPengawasan() {
+            const tglHariIni = new Date().toLocaleDateString('en-CA');
+            const logHariIni = semuaLogAbsensi.filter(item =>
+                new Date(item.created_at).toLocaleDateString('en-CA') === tglHariIni
+            );
+
+            // Hitung siswa hadir & izin hari ini
+            const setHadir = new Set(logHariIni.filter(d => d.jenis_absen === 'Masuk').map(d => d.nama_siswa));
+            const setIzinSakit = new Set(logHariIni.filter(d => d.jenis_absen === 'Izin' || d.jenis_absen === 'Sakit').map(d => d.nama_siswa));
+
+            // Cari siswa terdaftar yang belum ada catatan Masuk, Izin, maupun Sakit hari ini
+            const daftarAlpa = daftarSiswa.filter(s => !setHadir.has(s.nama_siswa) && !setIzinSakit.has(s.nama_siswa));
+
+            document.getElementById('stat-total-siswa').textContent = daftarSiswa.length;
+            document.getElementById('stat-hadir-hari-ini').textContent = setHadir.size;
+            document.getElementById('stat-izin-hari-ini').textContent = setIzinSakit.size;
+            document.getElementById('stat-alpa-hari-ini').textContent = daftarAlpa.length;
+            document.getElementById('badge-jml-alpa').textContent = daftarAlpa.length;
+
+            const listAlpaEl = document.getElementById('list-siswa-alpa');
+            if (daftarAlpa.length === 0) {
+                listAlpaEl.innerHTML = `<p class="p-6 text-center text-emerald-700 font-semibold text-xs">✅ Luar biasa! Seluruh siswa terdaftar sudah melakukan absen atau melapor hari ini.</p>`;
+            } else {
+                listAlpaEl.innerHTML = daftarAlpa.map(s => {
+                    const namaTempat = s.master_tempat_pkl ? s.master_tempat_pkl.nama_tempat : '-';
+                    const guruObj = s.master_tempat_pkl ? daftarGuru.find(g => g.id === s.master_tempat_pkl.guru_id) : null;
+                    const namaGuru = guruObj ? guruObj.nama_guru : 'Belum ada pembimbing';
+                    return `
+                        <div class="p-3 flex justify-between items-center hover:bg-rose-50/40">
+                            <div>
+                                <p class="font-bold text-slate-800 text-xs">${escapeHTML(s.nama_siswa)}</p>
+                                <p class="text-[11px] text-slate-500">🏢 ${escapeHTML(namaTempat)} • 👨‍🏫 ${escapeHTML(namaGuru)}</p>
+                            </div>
+                            <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold">Belum Absen</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Radar Anomali Fake GPS
+            const logAnomali = semuaLogAbsensi.filter(d => (d.jurnal_kegiatan || '').includes('ANOMALI GPS'));
+            document.getElementById('stat-anomali-gps').textContent = logAnomali.length;
+            document.getElementById('badge-jml-anomali').textContent = logAnomali.length;
+
+            const listAnomaliEl = document.getElementById('list-anomali-gps');
+            if (logAnomali.length === 0) {
+                listAnomaliEl.innerHTML = `<p class="p-4 text-center text-slate-400">Tidak ditemukan indikasi Fake GPS.</p>`;
+            } else {
+                listAnomaliEl.innerHTML = logAnomali.map(item => {
+                    const waktu = new Date(item.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    return `
+                        <div class="p-3 flex justify-between items-center bg-amber-50/30">
+                            <div>
+                                <p class="font-bold text-slate-800">${escapeHTML(item.nama_siswa)} <span class="font-normal text-slate-500">(${waktu})</span></p>
+                                <p class="text-amber-800 mt-0.5">${escapeHTML(item.jurnal_kegiatan)}</p>
+                            </div>
+                            <button onclick="bukaModal('${item.foto_url}', '${escapeHTML(item.nama_siswa)}', '${waktu}')" class="px-2 py-1 rounded bg-amber-200 text-amber-900 font-bold shrink-0 ml-2">Foto</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Kinerja Validasi Per Guru Pembimbing
+            const listKinerjaEl = document.getElementById('list-kinerja-guru');
+            if (daftarGuru.length === 0) {
+                listKinerjaEl.innerHTML = `<p class="p-4 text-center text-slate-400">Belum ada guru pembimbing terdaftar.</p>`;
+            } else {
+                listKinerjaEl.innerHTML = daftarGuru.map(g => {
+                    const tempatBinaan = daftarTempat.filter(t => t.guru_id === g.id).map(t => t.nama_tempat);
+                    const logBinaan = semuaLogAbsensi.filter(l => tempatBinaan.includes(l.tempat_pkl));
+                    const menunggu = logBinaan.filter(l => (l.status_validasi || 'Menunggu') === 'Menunggu').length;
+                    const acc = logBinaan.filter(l => l.status_validasi === 'Disetujui').length;
+
+                    return `
+                        <div class="p-3 flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-slate-800">${escapeHTML(g.nama_guru)}</p>
+                                <p class="text-[11px] text-slate-500">${tempatBinaan.length} lokasi binaan</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">✓ ${acc} ACC</span>
+                                <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold">⏳ ${menunggu} Menunggu</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ==========================================
+        // 5. MANAJEMEN GURU PEMBIMBING
+        // ==========================================
+        function renderMasterGuru() {
+            document.getElementById('jumlah-guru').textContent = daftarGuru.length;
+            const listEl = document.getElementById('list-master-guru');
+            const selectGuruTempat = document.getElementById('select-guru-tempat');
+            const editGuruTempat = document.getElementById('edit-guru-tempat');
+
+            selectGuruTempat.innerHTML = '<option value="">-- Pilih Guru Pembimbing --</option>';
+            editGuruTempat.innerHTML = '<option value="">-- Pilih Guru Pembimbing --</option>';
+
+            daftarGuru.forEach(g => {
+                selectGuruTempat.innerHTML += `<option value="${g.id}">${escapeHTML(g.nama_guru)}</option>`;
+                editGuruTempat.innerHTML += `<option value="${g.id}">${escapeHTML(g.nama_guru)}</option>`;
+            });
+
+            if (daftarGuru.length === 0) {
+                listEl.innerHTML = `<p class="p-6 text-center text-slate-400 text-xs">Belum ada guru pembimbing. Tambahkan melalui form di sebelah kiri.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = daftarGuru.map(g => {
+                const tempatBinaan = daftarTempat.filter(t => t.guru_id === g.id);
+                const namaTempatList = tempatBinaan.length > 0
+                    ? tempatBinaan.map(t => t.nama_tempat).join(', ')
+                    : 'Belum ada tempat PKL yang di-plotting';
+
+                return `
+                    <div class="p-4 flex justify-between items-start gap-3 hover:bg-slate-50">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <p class="font-bold text-slate-800 text-sm">${escapeHTML(g.nama_guru)}</p>
+                                <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[11px] font-mono font-bold">PIN: ${escapeHTML(g.pin_login)}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 font-mono">${escapeHTML(g.nip_guru)}</p>
+                            <p class="text-xs text-slate-600 pt-1">🏢 <strong>Wilayah Bimbingan:</strong> ${escapeHTML(namaTempatList)}</p>
+                        </div>
+                        <button onclick="hapusMasterGuru(${g.id}, '${escapeHTML(g.nama_guru)}')"
+                            class="px-2.5 py-1 rounded bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold border border-red-200 shrink-0">
+                            Hapus
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('form-tambah-guru').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nama = document.getElementById('input-nama-guru').value.trim();
+            const nip = document.getElementById('input-nip-guru').value.trim();
+            const pin = document.getElementById('input-pin-guru').value.trim();
+
+            const btn = document.getElementById('btn-simpan-guru');
+            btn.disabled = true;
+            btn.textContent = "Menyimpan...";
+
+            const { error } = await supabaseClient
+                .from('master_guru_pkl')
+                .insert([{ nama_guru: nama, nip_guru: nip, pin_login: pin }]);
+
+            btn.disabled = false;
+            btn.textContent = "+ Simpan Akun Guru";
+
+            if (error) {
+                alert("Gagal menyimpan akun guru (pastikan PIN unik dan tidak sama dengan guru lain): " + error.message);
+                return;
+            }
+
+            document.getElementById('input-nama-guru').value = '';
+            document.getElementById('input-nip-guru').value = '';
+            document.getElementById('input-pin-guru').value = '';
+            await muatSemuaDataAdmin();
+        });
+
+        async function hapusMasterGuru(id, nama) {
+            if (!confirm(`Hapus akun guru pembimbing "${nama}"?`)) return;
+            const { error } = await supabaseClient.from('master_guru_pkl').delete().eq('id', id);
+            if (error) alert("Gagal menghapus: " + error.message);
+            else await muatSemuaDataAdmin();
+        }
+
+        // ==========================================
+        // 6. MANAJEMEN TEMPAT PKL & SISWA
+        // ==========================================
+        function renderMasterTempat() {
+            document.getElementById('jumlah-tempat').textContent = daftarTempat.length;
+            const listEl = document.getElementById('list-master-tempat');
+            const selectTempatSiswa = document.getElementById('select-tempat-siswa');
+            const filterMasterTempat = document.getElementById('filter-master-siswa-tempat');
+
+            selectTempatSiswa.innerHTML = '<option value="">-- Pilih Tempat PKL --</option>';
+            filterMasterTempat.innerHTML = '<option value="">Semua Tempat</option>';
+
+            daftarTempat.forEach(t => {
+                selectTempatSiswa.innerHTML += `<option value="${t.id}">${escapeHTML(t.nama_tempat)}</option>`;
+                filterMasterTempat.innerHTML += `<option value="${t.id}">${escapeHTML(t.nama_tempat)}</option>`;
+            });
+
+            if (daftarTempat.length === 0) {
+                listEl.innerHTML = `<p class="p-4 text-xs text-slate-400 text-center">Belum ada tempat PKL terdaftar.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = daftarTempat.map(t => {
+                const jmlSiswa = daftarSiswa.filter(s => s.tempat_id === t.id).length;
+                const namaGuru = t.master_guru_pkl ? t.master_guru_pkl.nama_guru : 'Belum ditentukan';
+                return `
+                    <div class="p-3.5 flex justify-between items-start gap-2 hover:bg-slate-50">
+                        <div class="min-w-0 space-y-1">
+                            <p class="font-bold text-slate-800 text-sm truncate">${escapeHTML(t.nama_tempat)}</p>
+                            <p class="text-[11px] text-indigo-700 font-semibold">👨‍🏫 Pembimbing: ${escapeHTML(namaGuru)} (${jmlSiswa} siswa)</p>
+                            <p class="text-[10px] text-slate-500 font-mono">Buka: ${t.jam_masuk_mulai || '06:00'} | Telat: ${t.batas_terlambat || '07:30'} | Pulang: ${t.jam_pulang_mulai || '15:00'}</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button onclick="bukaModalEditTempat(${t.id})" class="px-2.5 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold border border-amber-200">✏️ Edit</button>
+                            <button onclick="hapusMasterTempat(${t.id}, '${escapeHTML(t.nama_tempat)}')" class="px-2.5 py-1 rounded bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold border border-red-200">Hapus</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function bukaModalEditTempat(id) {
+            const t = daftarTempat.find(item => item.id === id);
+            if (!t) return;
+            document.getElementById('edit-tempat-id').value = t.id;
+            document.getElementById('edit-nama-tempat').value = t.nama_tempat;
+            document.getElementById('edit-guru-tempat').value = t.guru_id || '';
+            document.getElementById('edit-koordinat-gabungan').value = `${t.latitude}, ${t.longitude}`;
+            document.getElementById('edit-jam-masuk-mulai').value = t.jam_masuk_mulai || '06:00';
+            document.getElementById('edit-batas-terlambat').value = t.batas_terlambat || '07:30';
+            document.getElementById('edit-jam-pulang-mulai').value = t.jam_pulang_mulai || '15:00';
+            document.getElementById('modal-edit-tempat').classList.remove('hidden');
+        }
+
+        function tutupModalEditTempat() {
+            document.getElementById('modal-edit-tempat').classList.add('hidden');
+        }
+
+        document.getElementById('form-edit-tempat').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('edit-tempat-id').value, 10);
+            const namaBaru = document.getElementById('edit-nama-tempat').value.trim();
+            const guruId = document.getElementById('edit-guru-tempat').value;
+            const koordinatRaw = document.getElementById('edit-koordinat-gabungan').value.trim();
+            const bagian = koordinatRaw.split(',').map(s => parseFloat(s.trim()));
+
+            if (bagian.length !== 2 || isNaN(bagian[0]) || isNaN(bagian[1])) {
+                alert("Format koordinat tidak valid!");
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('master_tempat_pkl')
+                .update({
+                    nama_tempat: namaBaru,
+                    guru_id: guruId ? parseInt(guruId, 10) : null,
+                    latitude: bagian[0],
+                    longitude: bagian[1],
+                    jam_masuk_mulai: document.getElementById('edit-jam-masuk-mulai').value,
+                    batas_terlambat: document.getElementById('edit-batas-terlambat').value,
+                    jam_pulang_mulai: document.getElementById('edit-jam-pulang-mulai').value
+                })
+                .eq('id', id);
+
+            if (error) alert("Gagal memperbarui: " + error.message);
+            else {
+                tutupModalEditTempat();
+                await muatSemuaDataAdmin();
+            }
+        });
+
+        document.getElementById('form-tambah-tempat').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const namaTempat = document.getElementById('input-nama-tempat').value.trim();
+            const guruId = document.getElementById('select-guru-tempat').value;
+            const koordinatRaw = document.getElementById('input-koordinat-gabungan').value.trim();
+            const bagian = koordinatRaw.split(',').map(s => parseFloat(s.trim()));
+
+            if (bagian.length !== 2 || isNaN(bagian[0]) || isNaN(bagian[1])) {
+                alert("Format koordinat tidak valid!");
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('master_tempat_pkl')
+                .insert([{
+                    nama_tempat: namaTempat,
+                    guru_id: guruId ? parseInt(guruId, 10) : null,
+                    latitude: bagian[0],
+                    longitude: bagian[1],
+                    jam_masuk_mulai: document.getElementById('input-jam-masuk-mulai').value,
+                    batas_terlambat: document.getElementById('input-batas-terlambat').value,
+                    jam_pulang_mulai: document.getElementById('input-jam-pulang-mulai').value
+                }]);
+
+            if (error) alert("Gagal menyimpan tempat PKL: " + error.message);
+            else {
+                document.getElementById('input-nama-tempat').value = '';
+                document.getElementById('input-koordinat-gabungan').value = '';
+                await muatSemuaDataAdmin();
+            }
+        });
+
+        function renderMasterSiswa() {
+            const filterTempatId = document.getElementById('filter-master-siswa-tempat').value;
+            const dataTampil = filterTempatId
+                ? daftarSiswa.filter(s => String(s.tempat_id) === String(filterTempatId))
+                : daftarSiswa;
+
+            document.getElementById('jumlah-siswa').textContent = dataTampil.length;
+            const listEl = document.getElementById('list-master-siswa');
+
+            if (dataTampil.length === 0) {
+                listEl.innerHTML = `<p class="p-4 text-xs text-slate-400 text-center">Belum ada siswa terdaftar.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = dataTampil.map(s => {
+                const namaTempat = s.master_tempat_pkl ? s.master_tempat_pkl.nama_tempat : '-';
+                return `
+                    <div class="p-3 flex justify-between items-center hover:bg-slate-50">
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">${escapeHTML(s.nama_siswa)}</p>
+                            <p class="text-[11px] text-slate-500">🏢 ${escapeHTML(namaTempat)}</p>
+                        </div>
+                        <button onclick="hapusMasterSiswa(${s.id}, '${escapeHTML(s.nama_siswa)}')" class="px-2.5 py-1 rounded bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold border border-red-200">Hapus</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('filter-master-siswa-tempat').addEventListener('change', renderMasterSiswa);
+
+        document.getElementById('form-tambah-siswa').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tempatId = document.getElementById('select-tempat-siswa').value;
+            const daftarBarisNama = document.getElementById('input-nama-siswa-baru').value
+                .split('\n').map(n => n.trim()).filter(n => n.length > 0);
+
+            if (!tempatId || daftarBarisNama.length === 0) return;
+
+            const payload = daftarBarisNama.map(nama => ({ nama_siswa: nama, tempat_id: parseInt(tempatId, 10) }));
+            const { error } = await supabaseClient.from('master_siswa_pkl').insert(payload);
+
+            if (error) alert("Gagal menyimpan siswa: " + error.message);
+            else {
+                document.getElementById('input-nama-siswa-baru').value = '';
+                await muatSemuaDataAdmin();
+            }
+        });
+
+        async function hapusMasterTempat(id, nama) {
+            if (!confirm(`Hapus tempat PKL "${nama}"?`)) return;
+            await supabaseClient.from('master_tempat_pkl').delete().eq('id', id);
+            await muatSemuaDataAdmin();
+        }
+
+        async function hapusMasterSiswa(id, nama) {
+            if (!confirm(`Hapus siswa "${nama}"?`)) return;
+            await supabaseClient.from('master_siswa_pkl').delete().eq('id', id);
+            await muatSemuaDataAdmin();
+        }
+
+        function ambilKoordinatGPS(targetInputId) {
+            if (!navigator.geolocation) return;
+            const input = document.getElementById(targetInputId);
+            input.value = "Mencari GPS...";
+            navigator.geolocation.getCurrentPosition(
+                (pos) => { input.value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`; },
+                (err) => { input.value = ""; alert("Gagal GPS: " + err.message); },
+                { enableHighAccuracy: true }
+            );
+        }
+
+        // ==========================================
+        // 7. LOG GLOBAL & HAPUS MASSAL
+        // ==========================================
+        function terapkanFilterLog() {
+            const kw = document.getElementById('filter-log-global').value.toLowerCase().trim();
+            const tglMulai = document.getElementById('filter-tgl-mulai').value;
+            const tglSelesai = document.getElementById('filter-tgl-selesai').value;
+
+            logTersaring = semuaLogAbsensi.filter(item => {
+                const cocokTeks = item.nama_siswa.toLowerCase().includes(kw) || item.tempat_pkl.toLowerCase().includes(kw);
+                const tglLokal = new Date(item.created_at).toLocaleDateString('en-CA');
+                const cocokMulai = tglMulai === "" || tglLokal >= tglMulai;
+                const cocokSelesai = tglSelesai === "" || tglLokal <= tglSelesai;
+                return cocokTeks && cocokMulai && cocokSelesai;
+            });
+
+            const tbody = document.getElementById('tabel-log-admin');
+            if (logTersaring.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400">Tidak ada data log yang sesuai filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = logTersaring.slice(0, 300).map(item => {
+                const w = new Date(item.created_at);
+                const tglStr = w.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                const jamStr = w.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-2.5 px-4 whitespace-nowrap text-xs">
+                            <div class="font-bold text-slate-800">${tglStr}</div>
+                            <div class="text-slate-500">${jamStr} WITA</div>
+                        </td>
+                        <td class="py-2.5 px-4 text-xs">
+                            <div class="font-bold text-slate-800">${escapeHTML(item.nama_siswa)}</div>
+                            <div class="text-slate-500">${escapeHTML(item.tempat_pkl)}</div>
+                        </td>
+                        <td class="py-2.5 px-4 text-xs font-bold">${escapeHTML(item.jenis_absen)}</td>
+                        <td class="py-2.5 px-4 text-xs max-w-xs truncate">${escapeHTML(item.jurnal_kegiatan || '-')}</td>
+                        <td class="py-2.5 px-4 text-xs">${escapeHTML(item.status_validasi || 'Menunggu')}</td>
+                        <td class="py-2.5 px-4 text-center">
+                            <button onclick="bukaModal('${item.foto_url}', '${escapeHTML(item.nama_siswa)}', '${tglStr} • ${jamStr}')" class="text-blue-600 hover:underline text-xs font-semibold">Lihat</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('filter-log-global').addEventListener('input', terapkanFilterLog);
+        document.getElementById('filter-tgl-mulai').addEventListener('change', terapkanFilterLog);
+        document.getElementById('filter-tgl-selesai').addEventListener('change', terapkanFilterLog);
+
+        function resetFilterLog() {
+            document.getElementById('filter-log-global').value = '';
+            document.getElementById('filter-tgl-mulai').value = '';
+            document.getElementById('filter-tgl-selesai').value = '';
+            terapkanFilterLog();
+        }
+
+        async function hapusMassalTersaring() {
+            const adaFilter = document.getElementById('filter-log-global').value.trim() !== "" ||
+                              document.getElementById('filter-tgl-mulai').value !== "" ||
+                              document.getElementById('filter-tgl-selesai').value !== "";
+            if (!adaFilter) {
+                alert("⚠️ Pilih minimal satu filter (misalnya rentang tanggal) terlebih dahulu sebelum Hapus Massal.");
+                return;
+            }
+            if (logTersaring.length === 0) return;
+
+            const konfirmasi = prompt(`PERINGATAN! Anda akan menghapus permanen ${logTersaring.length} rekaman absensi beserta seluruh fotonya.\nKetik HAPUS untuk melanjutkan:`);
+            if (konfirmasi !== 'HAPUS') return;
+
+            const daftarFile = [];
+            const daftarId = [];
+            logTersaring.forEach(item => {
+                daftarId.push(item.id);
+                if (item.foto_url && item.foto_url.includes('/foto-absen/')) daftarFile.push(item.foto_url.split('/foto-absen/')[1]);
+                if (item.foto_kegiatan_url && item.foto_kegiatan_url.includes('/foto-absen/')) daftarFile.push(item.foto_kegiatan_url.split('/foto-absen/')[1]);
+            });
+
+            for (let i = 0; i < daftarFile.length; i += 100) {
+                await supabaseClient.storage.from('foto-absen').remove(daftarFile.slice(i, i + 100));
+            }
+            for (let i = 0; i < daftarId.length; i += 200) {
+                await supabaseClient.from('absensi_pkl').delete().in('id', daftarId.slice(i, i + 200));
+            }
+
+            alert(`✅ Berhasil menghapus ${daftarId.length} rekaman dan ${daftarFile.length} file foto!`);
+            await muatSemuaDataAdmin();
+        }
+
+        // ==========================================
+        // 8. MODAL INFO SEKOLAH, FOTO & EKSPOR EXCEL
+        // ==========================================
+        function bukaModalInfoSekolah() {
+            document.getElementById('set-instansi-atas').value = infoSekolahAktif.instansi_atas;
+            document.getElementById('set-nama-sekolah').value = infoSekolahAktif.nama_sekolah;
+            document.getElementById('set-alamat-sekolah').value = infoSekolahAktif.alamat_sekolah;
+            document.getElementById('set-kota').value = infoSekolahAktif.kota;
+            document.getElementById('set-nama-kepsek').value = infoSekolahAktif.nama_kepsek;
+            document.getElementById('set-nip-kepsek').value = infoSekolahAktif.nip_kepsek;
+            document.getElementById('modal-info-sekolah').classList.remove('hidden');
+        }
+
+        function tutupModalInfoSekolah() {
+            document.getElementById('modal-info-sekolah').classList.add('hidden');
+        }
+
+        document.getElementById('form-info-sekolah').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                id: 1,
+                instansi_atas: document.getElementById('set-instansi-atas').value.trim(),
+                nama_sekolah: document.getElementById('set-nama-sekolah').value.trim(),
+                alamat_sekolah: document.getElementById('set-alamat-sekolah').value.trim(),
+                kota: document.getElementById('set-kota').value.trim(),
+                nama_kepsek: document.getElementById('set-nama-kepsek').value.trim(),
+                nip_kepsek: document.getElementById('set-nip-kepsek').value.trim(),
+                nama_guru: infoSekolahAktif.nama_guru || 'Guru Pembimbing PKL',
+                nip_guru: infoSekolahAktif.nip_guru || '-'
+            };
+            const { error } = await supabaseClient.from('pengaturan_sekolah').upsert(payload);
+            if (error) alert("Gagal menyimpan: " + error.message);
+            else {
+                tutupModalInfoSekolah();
+                await muatSemuaDataAdmin();
+                alert("✅ Info Sekolah berhasil diperbarui!");
+            }
+        });
+
+        function bukaModal(url, nama, info) {
+            document.getElementById('modal-img').src = url;
+            document.getElementById('modal-nama').textContent = nama;
+            document.getElementById('modal-info').textContent = info;
+            document.getElementById('modal-foto').classList.remove('hidden');
+        }
+
+        function tutupModal() {
+            document.getElementById('modal-foto').classList.add('hidden');
+        }
+
+        function downloadCSVGlobal() {
+            if (semuaLogAbsensi.length === 0) return;
+            const headers = ["No", "Tanggal", "Jam", "Nama Siswa", "Tempat PKL", "Status", "Jurnal", "Validasi", "Link Foto"];
+            const rows = semuaLogAbsensi.map((item, i) => {
+                const w = new Date(item.created_at);
+                return [
+                    i + 1, w.toLocaleDateString('id-ID'), w.toLocaleTimeString('id-ID'),
+                    `"${item.nama_siswa}"`, `"${item.tempat_pkl}"`, item.jenis_absen,
+                    `"${(item.jurnal_kegiatan || '-').replace(/[\r\n;]/g, ' ')}"`,
+                    item.status_validasi || 'Menunggu', item.foto_url
+                ].join(";");
+            });
+            const blob = new Blob(["\uFEFF" + [headers.join(";"), ...rows].join("\n")], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Rekap_Global_PKL_${new Date().toLocaleDateString('en-CA')}.csv`;
+            link.click();
+        }
+
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
+        }
+    </script>
+</body>
+</html>

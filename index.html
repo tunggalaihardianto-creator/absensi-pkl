@@ -35,13 +35,33 @@
 
     <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 my-4">
         <!-- Header -->
-        <div class="bg-blue-600 text-white p-5 text-center">
+        <div class="bg-blue-600 text-white p-5 text-center relative">
+            <div class="flex justify-center items-center gap-2 mb-1">
+                <span id="badge-koneksi" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-100 border border-emerald-300/40">
+                    🟢 Online
+                </span>
+            </div>
             <h1 class="text-xl font-bold tracking-wide">Absensi Siswa PKL</h1>
             <p class="text-blue-100 text-xs mt-1" id="tanggal-sekarang">Memuat tanggal...</p>
             <p class="text-blue-200 text-[11px] font-mono mt-0.5" id="jam-live">--:--:-- WITA</p>
         </div>
 
         <div class="p-5 space-y-4">
+            <!-- Banner Antrean Offline (Muncul Jika Ada Absen Tersimpan Lokal Belum Terkirim) -->
+            <div id="banner-antrean-offline" class="hidden bg-indigo-50 border border-indigo-300 text-indigo-900 p-3.5 rounded-xl text-xs space-y-2">
+                <div class="flex items-start gap-2">
+                    <span class="text-base">📤</span>
+                    <div>
+                        <p class="font-bold">Ada <span id="jumlah-antrean-offline">0</span> Absen Tersimpan Offline di HP</p>
+                        <p class="text-indigo-700 mt-0.5">Data akan otomatis terkirim ke server begitu HP mendapatkan sinyal internet.</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-sync-sekarang" onclick="sinkronkanAntreanOffline()"
+                    class="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition shadow-xs">
+                    🔄 Kirim Antrean ke Server Sekarang
+                </button>
+            </div>
+
             <!-- Form Identitas Siswa -->
             <div class="space-y-3">
                 <div class="grid grid-cols-2 gap-3">
@@ -64,12 +84,18 @@
                     </div>
                 </div>
 
-                <!-- Banner Status Batas Jam Absen -->
+                <!-- Info Jadwal Kerja Tempat PKL yang Dipilih -->
+                <div id="info-jadwal-lokasi" class="hidden bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-[11px] text-slate-600 flex justify-between items-center">
+                    <span>⏰ Jadwal Lokasi Ini:</span>
+                    <span class="font-mono font-bold text-slate-800" id="teks-jadwal-lokasi">Masuk &le; 07:30 | Pulang &ge; 15:00</span>
+                </div>
+
+                <!-- Banner Status Batas Jam Absen / Keterlambatan -->
                 <div id="banner-jam-absen" class="hidden bg-rose-50 border border-rose-300 text-rose-800 p-3 rounded-xl text-xs flex items-start gap-2">
-                    <span class="text-base">⏰</span>
+                    <span class="text-base" id="ikon-jam-absen">⏰</span>
                     <div>
-                        <p class="font-bold" id="judul-jam-absen">Di Luar Jadwal Absensi</p>
-                        <p class="text-rose-700 mt-0.5" id="detail-jam-absen"></p>
+                        <p class="font-bold" id="judul-jam-absen">Informasi Jadwal Absensi</p>
+                        <p class="mt-0.5" id="detail-jam-absen"></p>
                     </div>
                 </div>
 
@@ -128,7 +154,7 @@
 
             <!-- Panduan Foto Dinamis -->
             <div id="info-kamera-mode" class="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-xl text-xs flex justify-between items-center">
-                <span id="teks-mode-foto">📸 Arahkan wajah ke kamera depan untuk selfie.</span>
+                <span id="teks-mode-foto">📸 Perlihatkan wajah & latar tempat PKL saat selfie.</span>
                 <button type="button" id="btn-ganti-kamera" class="bg-white border border-blue-300 text-blue-700 px-2.5 py-1 rounded-lg font-semibold hover:bg-blue-100 transition shrink-0 ml-2">
                     🔄 Balik Kamera
                 </button>
@@ -157,7 +183,7 @@
                 </div>
             </div>
 
-            <!-- Panel Informasi Lokasi & Radius -->
+            <!-- Panel Informasi Lokasi, Akurasi & Anti-Fake GPS -->
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-sm">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-500 text-xs">Status Validasi GPS:</span>
@@ -169,9 +195,22 @@
                     <span class="text-slate-500 text-xs">Jarak ke Lokasi PKL:</span>
                     <span id="teks-jarak" class="font-bold text-xs text-slate-700">- meter</span>
                 </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500 text-xs">Keaslian & Akurasi Sinyal:</span>
+                    <span id="teks-akurasi-gps" class="font-semibold text-xs text-slate-600">Memeriksa satelit...</span>
+                </div>
                 <div class="flex justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-200">
                     <span>Koordinat Anda:</span>
                     <span id="teks-koordinat">Menunggu izin lokasi...</span>
+                </div>
+            </div>
+
+            <!-- Peringatan Jika Terindikasi Fake GPS -->
+            <div id="banner-fake-gps" class="hidden bg-red-50 border border-red-300 text-red-800 p-3 rounded-xl text-xs flex items-start gap-2">
+                <span class="text-base">🚨</span>
+                <div>
+                    <p class="font-bold">Anomali Sinyal GPS Terdeteksi!</p>
+                    <p class="mt-0.5" id="detail-fake-gps">Matikan aplikasi Fake GPS / Lokasi Palsu jika aktif. Rekaman ini akan ditandai otomatis pada laporan guru.</p>
                 </div>
             </div>
 
@@ -184,11 +223,11 @@
 
             <!-- Kartu Hasil Absen -->
             <div id="kartu-hasil" class="hidden border-t-2 border-dashed border-slate-200 pt-4 space-y-3">
-                <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-sm flex items-center gap-2">
-                    <span class="text-lg">✅</span>
+                <div id="box-notif-sukses" class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-sm flex items-center gap-2">
+                    <span class="text-lg" id="ikon-sukses">✅</span>
                     <div>
-                        <p class="font-bold" id="judul-sukses">Absen Tersimpan ke Database!</p>
-                        <p class="text-xs text-emerald-600" id="waktu-absen"></p>
+                        <p class="font-bold" id="judul-sukses">Absen Tersimpan!</p>
+                        <p class="text-xs opacity-90" id="waktu-absen"></p>
                     </div>
                 </div>
                 <div class="rounded-xl overflow-hidden border border-slate-300 shadow-sm">
@@ -211,25 +250,29 @@
 
     <script>
         // ==========================================
-        // 1. KONFIGURASI SUPABASE & JADWAL JAM ABSEN
+        // 1. KONFIGURASI SUPABASE & KUNCI STORAGE LOKAL
         // ==========================================
         const SUPABASE_URL = 'https://xpgijautojdibfqvtzao.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwZ2lqYXV0b2pkaWJmcXZ0emFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NDc1OTgsImV4cCI6MjExMDIyMzU5OH0.VFNskVxPJJ8lmo-c6nJybGiBEa9Uw-uOX89IM78Znpw';
 
-        const JADWAL_ABSEN = {
-            masukMulai: "06:30",
-            masukSelesai: "09:00",
-            pulangMulai: "15:00",
-            pulangSelesai: "21:00"
-        };
         const BATAS_RADIUS_METER = 50;
+        const KEY_CACHE_TEMPAT = 'pkl_cache_tempat_v1';
+        const KEY_CACHE_SISWA = 'pkl_cache_siswa_v1';
+        const KEY_ANTREAN_OFFLINE = 'pkl_antrean_absen_offline_v1';
 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Elemen DOM
+        const badgeKoneksi = document.getElementById('badge-koneksi');
+        const bannerAntreanOffline = document.getElementById('banner-antrean-offline');
+        const jumlahAntreanOffline = document.getElementById('jumlah-antrean-offline');
+        const btnSyncSekarang = document.getElementById('btn-sync-sekarang');
         const pilihTempat = document.getElementById('pilih-tempat');
         const pilihJenis = document.getElementById('pilih-jenis');
+        const infoJadwalLokasi = document.getElementById('info-jadwal-lokasi');
+        const teksJadwalLokasi = document.getElementById('teks-jadwal-lokasi');
         const bannerJamAbsen = document.getElementById('banner-jam-absen');
+        const ikonJamAbsen = document.getElementById('ikon-jam-absen');
         const judulJamAbsen = document.getElementById('judul-jam-absen');
         const detailJamAbsen = document.getElementById('detail-jam-absen');
         const pilihNama = document.getElementById('pilih-nama');
@@ -252,9 +295,14 @@
         const statusKamera = document.getElementById('status-kamera');
         const badgeRadius = document.getElementById('badge-radius');
         const teksJarak = document.getElementById('teks-jarak');
+        const teksAkurasiGps = document.getElementById('teks-akurasi-gps');
         const teksKoordinat = document.getElementById('teks-koordinat');
+        const bannerFakeGps = document.getElementById('banner-fake-gps');
+        const detailFakeGps = document.getElementById('detail-fake-gps');
         const btnAbsen = document.getElementById('btn-absen');
         const kartuHasil = document.getElementById('kartu-hasil');
+        const boxNotifSukses = document.getElementById('box-notif-sukses');
+        const ikonSukses = document.getElementById('ikon-sukses');
         const hasilFoto = document.getElementById('hasil-foto');
         const waktuAbsen = document.getElementById('waktu-absen');
         const judulSukses = document.getElementById('judul-sukses');
@@ -267,23 +315,151 @@
         let kameraAktif = false;
         let dalamRadiusValid = false;
         let dalamJamValid = true;
+        let statusTerlambatSaatIni = { terlambat: false, menitTelat: 0 };
         let sudahAbsenHariIni = false;
         let sedangMengecekDuplikat = false;
         let modeKameraSaatIni = 'user';
         let streamAktif = null;
-        let blobFotoKegiatan = null;
+        let dataUrlFotoKegiatan = null;
+
+        // Variabel Deteksi Anomali Fake GPS
+        let riwayatSampelGPS = [];
+        let statusAnomaliGPS = { mencurigakan: false, alasan: "" };
 
         // ==========================================
-        // 2. PREVIEW & KOMPRESI FOTO DOKUMENTASI KEGIATAN
+        // 2. PEMANTAU STATUS INTERNET & ANTREAN OFFLINE
+        // ==========================================
+        function perbaruiStatusKoneksiUI() {
+            const isOnline = navigator.onLine;
+            if (isOnline) {
+                badgeKoneksi.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-100 border border-emerald-300/40";
+                badgeKoneksi.textContent = "🟢 Online";
+                sinkronkanAntreanOffline();
+            } else {
+                badgeKoneksi.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-900";
+                badgeKoneksi.textContent = "🟠 Mode Offline (Tanpa Sinyal)";
+            }
+            perbaruiBannerAntreanOffline();
+        }
+
+        window.addEventListener('online', perbaruiStatusKoneksiUI);
+        window.addEventListener('offline', perbaruiStatusKoneksiUI);
+
+        function ambilAntreanOffline() {
+            try {
+                return JSON.parse(localStorage.getItem(KEY_ANTREAN_OFFLINE) || '[]');
+            } catch {
+                return [];
+            }
+        }
+
+        function simpanAntreanOffline(list) {
+            localStorage.setItem(KEY_ANTREAN_OFFLINE, JSON.stringify(list));
+            perbaruiBannerAntreanOffline();
+        }
+
+        function perbaruiBannerAntreanOffline() {
+            const antrean = ambilAntreanOffline();
+            if (antrean.length > 0) {
+                jumlahAntreanOffline.textContent = antrean.length;
+                bannerAntreanOffline.classList.remove('hidden');
+            } else {
+                bannerAntreanOffline.classList.add('hidden');
+            }
+        }
+
+        function dataURLtoBlob(dataurl) {
+            const arr = dataurl.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], { type: mime });
+        }
+
+        async function sinkronkanAntreanOffline() {
+            if (!navigator.onLine) return;
+            const antrean = ambilAntreanOffline();
+            if (antrean.length === 0) return;
+
+            btnSyncSekarang.disabled = true;
+            btnSyncSekarang.textContent = "⏳ Sedang mengunggah antrean...";
+
+            const sisaGagal = [];
+
+            for (const item of antrean) {
+                try {
+                    const blobAbsen = dataURLtoBlob(item.fotoAbsenDataUrl);
+                    const { error: errUp1 } = await supabaseClient.storage
+                        .from('foto-absen')
+                        .upload(item.namaFileAbsen, blobAbsen, { contentType: 'image/jpeg', upsert: true });
+
+                    if (errUp1) throw errUp1;
+
+                    const { data: pub1 } = supabaseClient.storage
+                        .from('foto-absen')
+                        .getPublicUrl(item.namaFileAbsen);
+
+                    let urlKegPublik = null;
+                    if (item.fotoKegiatanDataUrl && item.namaFileKegiatan) {
+                        const blobKeg = dataURLtoBlob(item.fotoKegiatanDataUrl);
+                        const { error: errUp2 } = await supabaseClient.storage
+                            .from('foto-absen')
+                            .upload(item.namaFileKegiatan, blobKeg, { contentType: 'image/jpeg', upsert: true });
+
+                        if (!errUp2) {
+                            const { data: pub2 } = supabaseClient.storage
+                                .from('foto-absen')
+                                .getPublicUrl(item.namaFileKegiatan);
+                            urlKegPublik = pub2.publicUrl;
+                        }
+                    }
+
+                    const { error: errIns } = await supabaseClient
+                        .from('absensi_pkl')
+                        .insert([{
+                            created_at: item.createdAtAsli,
+                            nama_siswa: item.namaSiswa,
+                            tempat_pkl: item.tempatPkl,
+                            jenis_absen: item.jenisAbsen,
+                            latitude: item.latitude,
+                            longitude: item.longitude,
+                            jarak_meter: item.jarakMeter,
+                            foto_url: pub1.publicUrl,
+                            foto_kegiatan_url: urlKegPublik,
+                            jurnal_kegiatan: item.jurnalKegiatan,
+                            status_validasi: 'Menunggu'
+                        }]);
+
+                    if (errIns) throw errIns;
+                } catch (err) {
+                    console.error("Gagal sinkronisasi item offline:", err);
+                    sisaGagal.push(item);
+                }
+            }
+
+            simpanAntreanOffline(sisaGagal);
+            btnSyncSekarang.disabled = false;
+            btnSyncSekarang.textContent = "🔄 Kirim Antrean ke Server Sekarang";
+
+            if (sisaGagal.length === 0) {
+                cekStatusAbsenHariIni();
+            }
+        }
+
+        // ==========================================
+        // 3. PREVIEW & KOMPRESI FOTO DOKUMENTASI
         // ==========================================
         inputFotoKegiatan.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
             try {
-                // Kompres gambar dokumentasi agar ringan (lebar maksimal 1000px, kualitas 80%)
-                blobFotoKegiatan = await kompresGambar(file, 1000, 0.8);
-                previewFotoKegiatan.src = URL.createObjectURL(blobFotoKegiatan);
+                dataUrlFotoKegiatan = await kompresGambarKeDataURL(file, 800, 0.65);
+                previewFotoKegiatan.src = dataUrlFotoKegiatan;
                 previewKegiatanWrapper.classList.remove('hidden');
             } catch (err) {
                 alert("Gagal memproses foto dokumentasi: " + err.message);
@@ -293,12 +469,12 @@
 
         function hapusFotoKegiatan() {
             inputFotoKegiatan.value = '';
-            blobFotoKegiatan = null;
+            dataUrlFotoKegiatan = null;
             previewFotoKegiatan.src = '';
             previewKegiatanWrapper.classList.add('hidden');
         }
 
-        function kompresGambar(file, maxWidth, quality) {
+        function kompresGambarKeDataURL(file, maxWidth, quality) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (event) => {
@@ -315,10 +491,7 @@
                         tempCanvas.height = height;
                         const ctx = tempCanvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        tempCanvas.toBlob((blob) => {
-                            if (blob) resolve(blob);
-                            else reject(new Error("Gagal mengonversi gambar"));
-                        }, 'image/jpeg', quality);
+                        resolve(tempCanvas.toDataURL('image/jpeg', quality));
                     };
                     img.onerror = () => reject(new Error("File gambar tidak valid"));
                     img.src = event.target.result;
@@ -329,28 +502,48 @@
         }
 
         // ==========================================
-        // 3. MUAT DATA TEMPAT & SISWA DARI SUPABASE
+        // 4. MUAT DATA TEMPAT & SISWA (ONLINE + CACHE OFFLINE)
         // ==========================================
         async function muatDataMasterDariDatabase() {
-            if (SUPABASE_URL.includes('GANTI_DENGAN')) {
-                pilihTempat.innerHTML = '<option value="">Isi kunci Supabase dulu</option>';
-                return;
+            // Muat dari cache lokal terlebih dahulu agar langsung tampil bahkan saat tanpa sinyal
+            const cacheTempat = localStorage.getItem(KEY_CACHE_TEMPAT);
+            const cacheSiswa = localStorage.getItem(KEY_CACHE_SISWA);
+
+            if (cacheTempat && cacheSiswa) {
+                daftarTempatDB = JSON.parse(cacheTempat);
+                daftarSiswaDB = JSON.parse(cacheSiswa);
+                renderDropdownTempat();
             }
 
-            const [resTempat, resSiswa] = await Promise.all([
-                supabaseClient.from('master_tempat_pkl').select('*').order('nama_tempat', { ascending: true }),
-                supabaseClient.from('master_siswa_pkl').select('*').order('nama_siswa', { ascending: true })
-            ]);
+            // Jika online, perbarui cache dari Supabase
+            if (navigator.onLine && !SUPABASE_URL.includes('GANTI_DENGAN')) {
+                try {
+                    const [resTempat, resSiswa] = await Promise.all([
+                        supabaseClient.from('master_tempat_pkl').select('*').order('nama_tempat', { ascending: true }).limit(1000),
+                        supabaseClient.from('master_siswa_pkl').select('*').order('nama_siswa', { ascending: true }).limit(2000)
+                    ]);
 
-            daftarTempatDB = resTempat.data || [];
-            daftarSiswaDB = resSiswa.data || [];
+                    if (resTempat.data && resTempat.data.length > 0) {
+                        daftarTempatDB = resTempat.data;
+                        daftarSiswaDB = resSiswa.data || [];
+                        localStorage.setItem(KEY_CACHE_TEMPAT, JSON.stringify(daftarTempatDB));
+                        localStorage.setItem(KEY_CACHE_SISWA, JSON.stringify(daftarSiswaDB));
+                        renderDropdownTempat();
+                    }
+                } catch (err) {
+                    console.log("Menggunakan data master offline dari memori HP.");
+                }
+            }
+        }
 
+        function renderDropdownTempat() {
             if (daftarTempatDB.length === 0) {
                 pilihTempat.innerHTML = '<option value="">Belum ada data tempat PKL</option>';
                 pilihNama.innerHTML = '<option value="">Tambahkan data di Dashboard Guru</option>';
                 return;
             }
 
+            const indeksSebelumnya = pilihTempat.value;
             pilihTempat.innerHTML = '';
             daftarTempatDB.forEach((tempat, index) => {
                 const option = document.createElement('option');
@@ -359,9 +552,22 @@
                 pilihTempat.appendChild(option);
             });
 
-            pilihTempat.value = 0;
-            lokasiKantorAktif = daftarTempatDB[0];
+            const indeksAktif = (indeksSebelumnya !== "" && daftarTempatDB[indeksSebelumnya]) ? indeksSebelumnya : 0;
+            pilihTempat.value = indeksAktif;
+            pilihLokasiAktif(indeksAktif);
+        }
+
+        function pilihLokasiAktif(index) {
+            lokasiKantorAktif = daftarTempatDB[index];
+            if (!lokasiKantorAktif) return;
+
+            const batasTelat = lokasiKantorAktif.batas_terlambat || '07:30';
+            const jamPulang = lokasiKantorAktif.jam_pulang_mulai || '15:00';
+            teksJadwalLokasi.textContent = `Masuk ≤ ${batasTelat} | Pulang ≥ ${jamPulang}`;
+            infoJadwalLokasi.classList.remove('hidden');
+
             muatDaftarSiswaUntukTempat(lokasiKantorAktif.id);
+            periksaJadwalJam();
             perbaruiStatusLokasi();
         }
 
@@ -383,12 +589,7 @@
         }
 
         pilihTempat.addEventListener('change', (e) => {
-            const index = e.target.value;
-            if (daftarTempatDB[index]) {
-                lokasiKantorAktif = daftarTempatDB[index];
-                muatDaftarSiswaUntukTempat(lokasiKantorAktif.id);
-                perbaruiStatusLokasi();
-            }
+            pilihLokasiAktif(e.target.value);
         });
 
         pilihNama.addEventListener('change', () => {
@@ -399,7 +600,7 @@
         document.getElementById('tanggal-sekarang').textContent = new Date().toLocaleDateString('id-ID', opsiTanggal);
 
         // ==========================================
-        // 4. VALIDASI BATAS JAM ABSENSI
+        // 5. VALIDASI JADWAL PER LOKASI
         // ==========================================
         function konversiMenit(waktuStr) {
             const [jam, menit] = waktuStr.split(':').map(Number);
@@ -413,28 +614,48 @@
 
             document.getElementById('jam-live').textContent = sekarang.toLocaleTimeString('id-ID') + ' WITA';
 
+            const masukMulai = (lokasiKantorAktif && lokasiKantorAktif.jam_masuk_mulai) ? lokasiKantorAktif.jam_masuk_mulai : "06:00";
+            const batasTerlambat = (lokasiKantorAktif && lokasiKantorAktif.batas_terlambat) ? lokasiKantorAktif.batas_terlambat : "07:30";
+            const pulangMulai = (lokasiKantorAktif && lokasiKantorAktif.jam_pulang_mulai) ? lokasiKantorAktif.jam_pulang_mulai : "15:00";
+
+            statusTerlambatSaatIni = { terlambat: false, menitTelat: 0 };
+
             if (jenis === 'Masuk') {
-                const mulai = konversiMenit(JADWAL_ABSEN.masukMulai);
-                const selesai = konversiMenit(JADWAL_ABSEN.masukSelesai);
-                if (menitSekarang >= mulai && menitSekarang <= selesai) {
+                const menitBukaMasuk = konversiMenit(masukMulai);
+                const menitBatasTelat = konversiMenit(batasTerlambat);
+
+                if (menitSekarang < menitBukaMasuk) {
+                    dalamJamValid = false;
+                    bannerJamAbsen.className = "bg-rose-50 border border-rose-300 text-rose-800 p-3 rounded-xl text-xs flex items-start gap-2";
+                    ikonJamAbsen.textContent = "⏰";
+                    judulJamAbsen.textContent = "Absen Masuk Belum Dibuka";
+                    detailJamAbsen.textContent = `Absen Masuk di lokasi ini baru dibuka mulai pukul ${masukMulai} WITA.`;
+                    bannerJamAbsen.classList.remove('hidden');
+                } else if (menitSekarang > menitBatasTelat) {
+                    dalamJamValid = true;
+                    const selisihMenit = menitSekarang - menitBatasTelat;
+                    statusTerlambatSaatIni = { terlambat: true, menitTelat: selisihMenit };
+
+                    bannerJamAbsen.className = "bg-orange-50 border border-orange-300 text-orange-900 p-3 rounded-xl text-xs flex items-start gap-2";
+                    ikonJamAbsen.textContent = "⚠️";
+                    judulJamAbsen.textContent = `Status: TERLAMBAT (+${selisihMenit} menit)`;
+                    detailJamAbsen.textContent = `Batas masuk tepat waktu pukul ${batasTerlambat} WITA. Anda tetap dapat absen dan tercatat Terlambat.`;
+                    bannerJamAbsen.classList.remove('hidden');
+                } else {
                     dalamJamValid = true;
                     bannerJamAbsen.classList.add('hidden');
-                } else {
-                    dalamJamValid = false;
-                    judulJamAbsen.textContent = "Absen Masuk Ditutup";
-                    detailJamAbsen.textContent = `Jadwal Absen Masuk hanya dibuka pukul ${JADWAL_ABSEN.masukMulai} - ${JADWAL_ABSEN.masukSelesai} WITA.`;
-                    bannerJamAbsen.classList.remove('hidden');
                 }
             } else if (jenis === 'Pulang') {
-                const mulai = konversiMenit(JADWAL_ABSEN.pulangMulai);
-                const selesai = konversiMenit(JADWAL_ABSEN.pulangSelesai);
-                if (menitSekarang >= mulai && menitSekarang <= selesai) {
+                const menitBukaPulang = konversiMenit(pulangMulai);
+                if (menitSekarang >= menitBukaPulang) {
                     dalamJamValid = true;
                     bannerJamAbsen.classList.add('hidden');
                 } else {
                     dalamJamValid = false;
+                    bannerJamAbsen.className = "bg-rose-50 border border-rose-300 text-rose-800 p-3 rounded-xl text-xs flex items-start gap-2";
+                    ikonJamAbsen.textContent = "⏰";
                     judulJamAbsen.textContent = "Belum Waktunya Absen Pulang";
-                    detailJamAbsen.textContent = `Absen Pulang baru dibuka mulai pukul ${JADWAL_ABSEN.pulangMulai} - ${JADWAL_ABSEN.pulangSelesai} WITA.`;
+                    detailJamAbsen.textContent = `Absen Pulang di lokasi ini baru dibuka mulai pukul ${pulangMulai} WITA.`;
                     bannerJamAbsen.classList.remove('hidden');
                 }
             } else {
@@ -448,16 +669,42 @@
         setInterval(periksaJadwalJam, 1000);
 
         // ==========================================
-        // 5. CEK RIWAYAT HARI INI + STATUS ACC GURU
+        // 6. CEK RIWAYAT HARI INI + ANTREAN OFFLINE
         // ==========================================
         async function cekStatusAbsenHariIni() {
             const namaSiswa = pilihNama.value;
             const jenisAbsen = pilihJenis.value;
 
-            if (!namaSiswa || SUPABASE_URL.includes('GANTI_DENGAN')) {
+            if (!namaSiswa) {
                 sudahAbsenHariIni = false;
                 bannerSudahAbsen.classList.add('hidden');
                 panelRiwayatHariIni.classList.add('hidden');
+                perbaruiTombolAbsen();
+                return false;
+            }
+
+            // Cek dulu di antrean offline lokal HP
+            const antreanLokal = ambilAntreanOffline();
+            const tglHariIniStr = new Date().toLocaleDateString('en-CA');
+            const adaDiAntrean = antreanLokal.find(a =>
+                a.namaSiswa === namaSiswa &&
+                a.jenisAbsen === jenisAbsen &&
+                new Date(a.createdAtAsli).toLocaleDateString('en-CA') === tglHariIniStr
+            );
+
+            if (adaDiAntrean) {
+                sudahAbsenHariIni = true;
+                const jam = new Date(adaDiAntrean.createdAtAsli).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                judulSudahAbsen.textContent = `Absen "${jenisAbsen}" sudah tersimpan di antrean HP!`;
+                detailSudahAbsen.textContent = `Direkam pukul ${jam} WITA (menunggu koneksi internet untuk terkirim otomatis).`;
+                bannerSudahAbsen.classList.remove('hidden');
+                perbaruiTombolAbsen();
+                return true;
+            }
+
+            if (!navigator.onLine || SUPABASE_URL.includes('GANTI_DENGAN')) {
+                sudahAbsenHariIni = false;
+                bannerSudahAbsen.classList.add('hidden');
                 perbaruiTombolAbsen();
                 return false;
             }
@@ -548,7 +795,7 @@
         }
 
         // ==========================================
-        // 6. INISIALISASI PETA MINI (LEAFLET.JS)
+        // 7. INISIALISASI PETA MINI (LEAFLET.JS)
         // ==========================================
         const map = L.map('peta-mini', {
             zoomControl: false
@@ -611,7 +858,7 @@
         }
 
         // ==========================================
-        // 7. AKTIFKAN & GANTI KAMERA
+        // 8. AKTIFKAN & GANTI KAMERA
         // ==========================================
         async function mulaiKamera(facingMode = 'user') {
             modeKameraSaatIni = facingMode;
@@ -643,7 +890,7 @@
             } catch (err) {
                 statusKamera.innerHTML = `
                     <p class="text-red-400 font-semibold text-sm">Gagal Mengakses Kamera</p>
-                    <p class="text-xs text-slate-300 mt-1">Pastikan izin kamera aktif dan dibuka via HTTPS.</p>
+                    <p class="text-xs text-slate-300 mt-1">Pastikan izin kamera aktif pada browser.</p>
                 `;
             }
         }
@@ -654,7 +901,7 @@
         });
 
         // ==========================================
-        // 8. LOGIKA MODE HADIR VS MODE IZIN / SAKIT
+        // 9. LOGIKA MODE HADIR VS MODE IZIN / SAKIT
         // ==========================================
         function apakahModeIzinAtauSakit() {
             return pilihJenis.value === 'Izin' || pilihJenis.value === 'Sakit';
@@ -679,7 +926,7 @@
                 boxDokumentasiKegiatan.classList.remove('hidden');
 
                 infoKameraMode.className = "bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-xl text-xs flex justify-between items-center";
-                teksModeFoto.textContent = "📸 Arahkan wajah ke kamera depan untuk selfie.";
+                teksModeFoto.textContent = "📸 Perlihatkan wajah & latar tempat PKL saat selfie.";
                 
                 if (modeKameraSaatIni !== 'user') {
                     mulaiKamera('user');
@@ -691,7 +938,7 @@
         });
 
         // ==========================================
-        // 9. RUMUS HAVERSINE & PANTAU GPS
+        // 10. DETEKSI ANOMALI FAKE GPS & PANTAU SATELIT GPS
         // ==========================================
         function hitungJarakHaversine(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
@@ -708,6 +955,69 @@
             return R * c;
         }
 
+        function evaluasiKeaslianGPS(coords) {
+            const sekarangMs = Date.now();
+            const akurasi = Math.round(coords.accuracy || 0);
+
+            riwayatSampelGPS.push({
+                lat: coords.latitude,
+                lng: coords.longitude,
+                acc: coords.accuracy,
+                waktu: sekarangMs
+            });
+
+            if (riwayatSampelGPS.length > 6) {
+                riwayatSampelGPS.shift();
+            }
+
+            let terdeteksiAneh = false;
+            let pesanAlasan = "";
+
+            // 1. Cek akurasi tidak wajar (Fake GPS sering mengunci accuracy = 0 atau < 1 meter)
+            if (coords.accuracy !== null && coords.accuracy < 1) {
+                terdeteksiAneh = true;
+                pesanAlasan = "Akurasi sinyal 0m (pola aplikasi lokasi palsu).";
+            }
+
+            // 2. Cek lompatan teleportasi tidak wajar antar sampel (> 150 km/jam)
+            if (!terdeteksiAneh && riwayatSampelGPS.length >= 2) {
+                const prev = riwayatSampelGPS[riwayatSampelGPS.length - 2];
+                const jarakLompat = hitungJarakHaversine(prev.lat, prev.lng, coords.latitude, coords.longitude);
+                const selisihDetik = (sekarangMs - prev.waktu) / 1000;
+                if (selisihDetik > 0 && selisihDetik < 15) {
+                    const kecepatanMps = jarakLompat / selisihDetik;
+                    if (kecepatanMps > 45) {
+                        terdeteksiAneh = true;
+                        pesanAlasan = "Terdeteksi lompatan koordinat GPS tidak wajar.";
+                    }
+                }
+            }
+
+            // 3. Cek koordinat mati/beku 100% identik selama 5 pembaruan berturut-turut
+            if (!terdeteksiAneh && riwayatSampelGPS.length >= 5) {
+                const semuaSamaPersis = riwayatSampelGPS.every(s =>
+                    s.lat === coords.latitude && s.lng === coords.longitude
+                );
+                if (semuaSamaPersis) {
+                    terdeteksiAneh = true;
+                    pesanAlasan = "Koordinat GPS terkunci statis tanpa fluktuasi satelit alami.";
+                }
+            }
+
+            statusAnomaliGPS = { mencurigakan: terdeteksiAneh, alasan: pesanAlasan };
+
+            if (terdeteksiAneh) {
+                teksAkurasiGps.className = "font-bold text-xs text-red-600";
+                teksAkurasiGps.textContent = `⚠️ Anomali Terdeteksi (±${akurasi}m)`;
+                detailFakeGps.textContent = `${pesanAlasan} Matikan Fake GPS jika aktif, karena sistem otomatis mencatat peringatan ini ke guru pembimbing.`;
+                bannerFakeGps.classList.remove('hidden');
+            } else {
+                teksAkurasiGps.className = "font-semibold text-xs text-emerald-700";
+                teksAkurasiGps.textContent = `✓ Sinyal Satelit Normal (±${akurasi}m)`;
+                bannerFakeGps.classList.add('hidden');
+            }
+        }
+
         function pantauGPS() {
             if (!navigator.geolocation) {
                 badgeRadius.textContent = "GPS Tidak Didukung";
@@ -718,14 +1028,16 @@
                 (position) => {
                     posisiUserSaatIni = {
                         lat: position.coords.latitude,
-                        lng: position.coords.longitude
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy
                     };
+                    evaluasiKeaslianGPS(position.coords);
                     perbaruiStatusLokasi();
                 },
                 (error) => {
                     badgeRadius.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700";
                     badgeRadius.textContent = "Izin GPS Ditolak";
-                    teksKoordinat.textContent = "Aktifkan GPS di perangkat Anda";
+                    teksKoordinat.textContent = "Aktifkan GPS di pengaturan HP Anda";
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
             );
@@ -773,7 +1085,7 @@
             if (!dalamJamValid) {
                 btnAbsen.disabled = true;
                 btnAbsen.className = "w-full py-3.5 px-4 rounded-xl font-bold text-white bg-rose-400 cursor-not-allowed transition-all shadow-md flex items-center justify-center gap-2";
-                btnAbsen.innerHTML = `<span>⏰</span><span>Di Luar Jadwal ${pilihJenis.value}</span>`;
+                btnAbsen.innerHTML = `<span>⏰</span><span>Belum Jadwal ${pilihJenis.value}</span>`;
                 return;
             }
 
@@ -794,17 +1106,23 @@
             if (!posisiUserSaatIni || !lokasiKantorAktif) {
                 btnAbsen.disabled = true;
                 btnAbsen.className = "w-full py-3.5 px-4 rounded-xl font-bold text-white bg-slate-400 cursor-not-allowed transition-all shadow-md flex items-center justify-center gap-2";
-                btnAbsen.innerHTML = `<span>⏳</span><span>Menunggu Sinyal GPS & Lokasi...</span>`;
+                btnAbsen.innerHTML = `<span>⏳</span><span>Menunggu Sinyal Satelit GPS...</span>`;
                 return;
             }
 
             if (dalamRadiusValid && kameraAktif) {
                 btnAbsen.disabled = false;
-                const warnaTombol = apakahModeIzinAtauSakit() 
-                    ? "bg-amber-600 hover:bg-amber-700" 
-                    : "bg-blue-600 hover:bg-blue-700";
-                btnAbsen.className = `w-full py-3.5 px-4 rounded-xl font-bold text-white ${warnaTombol} active:scale-[0.99] cursor-pointer transition-all shadow-md flex items-center justify-center gap-2`;
-                btnAbsen.innerHTML = `<span>📸</span><span>Kirim ${pilihJenis.value} Sekarang</span>`;
+                const modeOfflineTeks = !navigator.onLine ? " (Simpan Offline)" : "";
+                if (pilihJenis.value === 'Masuk' && statusTerlambatSaatIni.terlambat) {
+                    btnAbsen.className = "w-full py-3.5 px-4 rounded-xl font-bold text-white bg-orange-600 hover:bg-orange-700 active:scale-[0.99] cursor-pointer transition-all shadow-md flex items-center justify-center gap-2";
+                    btnAbsen.innerHTML = `<span>⚠️</span><span>Kirim Masuk (Telat +${statusTerlambatSaatIni.menitTelat}m)${modeOfflineTeks}</span>`;
+                } else if (apakahModeIzinAtauSakit()) {
+                    btnAbsen.className = "w-full py-3.5 px-4 rounded-xl font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.99] cursor-pointer transition-all shadow-md flex items-center justify-center gap-2";
+                    btnAbsen.innerHTML = `<span>📸</span><span>Kirim ${pilihJenis.value}${modeOfflineTeks}</span>`;
+                } else {
+                    btnAbsen.className = "w-full py-3.5 px-4 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer transition-all shadow-md flex items-center justify-center gap-2";
+                    btnAbsen.innerHTML = `<span>📸</span><span>Kirim ${pilihJenis.value} Sekarang${modeOfflineTeks}</span>`;
+                }
             } else {
                 btnAbsen.disabled = true;
                 btnAbsen.className = "w-full py-3.5 px-4 rounded-xl font-bold text-white bg-slate-400 cursor-not-allowed transition-all shadow-md flex items-center justify-center gap-2";
@@ -813,40 +1131,45 @@
         }
 
         // ==========================================
-        // 10. TANGKAP FOTO + WATERMARK + UPLOAD DOKUMENTASI + SIMPAN
+        // 11. TANGKAP FOTO + WATERMARK + SIMPAN (ONLINE / OFFLINE)
         // ==========================================
         function gambarWatermarkKeCanvas(ctx, width, height, info) {
-            const tinggiBanner = Math.max(85, Math.round(height * 0.22));
+            const tinggiBanner = Math.max(76, Math.round(height * 0.23));
             const yAwal = height - tinggiBanner;
 
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
             ctx.fillRect(0, yAwal, width, tinggiBanner);
 
-            ctx.fillStyle = '#3b82f6';
+            // Garis aksen merah jika anomali GPS, oranye jika terlambat, biru jika normal
+            ctx.fillStyle = info.anomaliGPS ? '#ef4444' : (info.terlambat ? '#f97316' : '#3b82f6');
             ctx.fillRect(0, yAwal, width, 4);
 
             const paddingX = Math.round(width * 0.035);
-            const fontUtama = Math.max(14, Math.round(width * 0.032));
-            const fontSub = Math.max(11, Math.round(width * 0.024));
+            const fontUtama = Math.max(12, Math.round(width * 0.031));
+            const fontSub = Math.max(10, Math.round(width * 0.023));
 
             ctx.textBaseline = 'top';
 
-            ctx.fillStyle = '#ffffff';
+            let labelStatus = info.terlambat ? `${info.jenis.toUpperCase()} - TERLAMBAT` : info.jenis.toUpperCase();
+            if (info.anomaliGPS) labelStatus += " ⚠️ ANOMALI GPS";
+
+            ctx.fillStyle = info.anomaliGPS ? '#fca5a5' : (info.terlambat ? '#fdba74' : '#ffffff');
             ctx.font = `bold ${fontUtama}px sans-serif`;
-            ctx.fillText(`${info.nama} • [${info.jenis.toUpperCase()}]`, paddingX, yAwal + Math.round(tinggiBanner * 0.14));
+            ctx.fillText(`${info.nama} • [${labelStatus}]`, paddingX, yAwal + Math.round(tinggiBanner * 0.13));
 
             ctx.fillStyle = '#93c5fd';
             ctx.font = `bold ${fontSub}px sans-serif`;
-            ctx.fillText(`📍 ${info.tempat} (Jarak: ${info.jarak}m)`, paddingX, yAwal + Math.round(tinggiBanner * 0.44));
+            ctx.fillText(`📍 ${info.tempat} (Jarak: ${info.jarak}m | Akurasi: ±${info.akurasi}m)`, paddingX, yAwal + Math.round(tinggiBanner * 0.43));
 
             ctx.fillStyle = '#cbd5e1';
             ctx.font = `${fontSub}px monospace`;
-            ctx.fillText(`🕒 ${info.waktu} | GPS: ${info.koordinat}`, paddingX, yAwal + Math.round(tinggiBanner * 0.70));
+            const tagOffline = info.offline ? ' [OFFLINE]' : '';
+            ctx.fillText(`🕒 ${info.waktu}${tagOffline} | ${info.koordinat}`, paddingX, yAwal + Math.round(tinggiBanner * 0.70));
         }
 
         btnAbsen.addEventListener('click', async () => {
             const namaSiswa = pilihNama.value;
-            const catatanJurnal = inputJurnal.value.trim();
+            let catatanJurnal = inputJurnal.value.trim();
 
             if (!namaSiswa) {
                 alert("Harap pilih Nama Anda terlebih dahulu pada daftar!");
@@ -861,7 +1184,7 @@
             }
 
             btnAbsen.disabled = true;
-            btnAbsen.innerHTML = `<span>⏳</span><span>Memverifikasi & Mengunggah...</span>`;
+            btnAbsen.innerHTML = `<span>⏳</span><span>Memproses Foto & Data...</span>`;
 
             const duplikatTerdeteksi = await cekStatusAbsenHariIni();
             if (duplikatTerdeteksi) {
@@ -869,10 +1192,16 @@
                 return;
             }
 
+            // Sisipkan penanda otomatis ke jurnal jika terdeteksi anomali Fake GPS
+            if (statusAnomaliGPS.mencurigakan) {
+                catatanJurnal = `[⚠️ PERINGATAN ANOMALI GPS: ${statusAnomaliGPS.alasan}] ` + (catatanJurnal || '-');
+            }
+
             try {
-                // 1. Tangkap foto selfie / surat dari kamera live
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+                const lebarTarget = Math.min(640, video.videoWidth || 640);
+                const rasio = lebarTarget / (video.videoWidth || 640);
+                canvas.width = lebarTarget;
+                canvas.height = Math.round((video.videoHeight || 480) * rasio);
                 const ctx = canvas.getContext('2d');
 
                 ctx.save();
@@ -887,31 +1216,67 @@
                 const waktuLengkap = sekarang.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + 
                                      ' ' + sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA';
                 
+                const adalahTerlambat = pilihJenis.value === 'Masuk' && statusTerlambatSaatIni.terlambat;
+                const sedangOffline = !navigator.onLine;
+
                 gambarWatermarkKeCanvas(ctx, canvas.width, canvas.height, {
                     nama: namaSiswa,
                     jenis: pilihJenis.value,
+                    terlambat: adalahTerlambat,
+                    anomaliGPS: statusAnomaliGPS.mencurigakan,
+                    offline: sedangOffline,
                     tempat: lokasiKantorAktif.nama_tempat,
                     jarak: jarakSaatIni,
+                    akurasi: Math.round(posisiUserSaatIni.accuracy || 0),
                     waktu: waktuLengkap,
                     koordinat: `${posisiUserSaatIni.lat.toFixed(5)}, ${posisiUserSaatIni.lng.toFixed(5)}`
                 });
 
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                hasilFoto.src = dataUrl;
+                const dataUrlAbsen = canvas.toDataURL('image/jpeg', 0.65);
+                hasilFoto.src = dataUrlAbsen;
 
-                const blobFotoAbsen = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
                 const namaBersih = namaSiswa.toLowerCase().replace(/[^a-z0-9]/g, '_');
                 const timestamp = Date.now();
                 const namaFileAbsen = `${timestamp}_${pilihJenis.value.toLowerCase()}_${namaBersih}.jpg`;
+                const namaFileKegiatan = dataUrlFotoKegiatan ? `${timestamp}_kegiatan_${namaBersih}.jpg` : null;
 
-                // 2. Unggah foto selfie/surat absen ke bucket 'foto-absen'
+                // JIKA TIDAK ADA INTERNET: SIMPAN KE ANTREAN LOKAL HP
+                if (sedangOffline) {
+                    const antrean = ambilAntreanOffline();
+                    antrean.push({
+                        createdAtAsli: sekarang.toISOString(),
+                        namaSiswa: namaSiswa,
+                        tempatPkl: lokasiKantorAktif.nama_tempat,
+                        jenisAbsen: pilihJenis.value,
+                        latitude: posisiUserSaatIni.lat,
+                        longitude: posisiUserSaatIni.lng,
+                        jarakMeter: jarakSaatIni,
+                        namaFileAbsen: namaFileAbsen,
+                        fotoAbsenDataUrl: dataUrlAbsen,
+                        namaFileKegiatan: namaFileKegiatan,
+                        fotoKegiatanDataUrl: dataUrlFotoKegiatan,
+                        jurnalKegiatan: catatanJurnal || '-'
+                    });
+                    simpanAntreanOffline(antrean);
+
+                    boxNotifSukses.className = "bg-indigo-50 border border-indigo-200 text-indigo-900 p-3 rounded-xl text-sm flex items-center gap-2";
+                    ikonSukses.textContent = "📥";
+                    judulSukses.textContent = `Tersimpan Offline di HP!`;
+                    waktuAbsen.textContent = `${namaSiswa} • ${waktuLengkap} (Akan terkirim otomatis saat sinyal internet tersedia)`;
+                    kartuHasil.classList.remove('hidden');
+                    kartuHasil.scrollIntoView({ behavior: 'smooth' });
+
+                    hapusFotoKegiatan();
+                    await cekStatusAbsenHariIni();
+                    return;
+                }
+
+                // JIKA ONLINE: UNGGAH LANGSUNG KE SUPABASE
+                const blobFotoAbsen = dataURLtoBlob(dataUrlAbsen);
                 const { error: uploadError } = await supabaseClient
                     .storage
                     .from('foto-absen')
-                    .upload(namaFileAbsen, blobFotoAbsen, {
-                        contentType: 'image/jpeg',
-                        upsert: false
-                    });
+                    .upload(namaFileAbsen, blobFotoAbsen, { contentType: 'image/jpeg', upsert: false });
 
                 if (uploadError) throw new Error("Gagal upload foto absen: " + uploadError.message);
 
@@ -920,17 +1285,13 @@
                     .from('foto-absen')
                     .getPublicUrl(namaFileAbsen);
 
-                // 3. Jika ada foto dokumentasi kegiatan, unggah juga ke bucket 'foto-absen'
                 let urlFotoKegiatanPublik = null;
-                if (blobFotoKegiatan) {
-                    const namaFileKegiatan = `${timestamp}_kegiatan_${namaBersih}.jpg`;
+                if (dataUrlFotoKegiatan && namaFileKegiatan) {
+                    const blobKeg = dataURLtoBlob(dataUrlFotoKegiatan);
                     const { error: uploadKegError } = await supabaseClient
                         .storage
                         .from('foto-absen')
-                        .upload(namaFileKegiatan, blobFotoKegiatan, {
-                            contentType: 'image/jpeg',
-                            upsert: false
-                        });
+                        .upload(namaFileKegiatan, blobKeg, { contentType: 'image/jpeg', upsert: false });
 
                     if (uploadKegError) throw new Error("Gagal upload foto kegiatan: " + uploadKegError.message);
 
@@ -942,7 +1303,6 @@
                     urlFotoKegiatanPublik = publicUrlKeg.publicUrl;
                 }
 
-                // 4. Simpan seluruh data ke database
                 const { error: insertError } = await supabaseClient
                     .from('absensi_pkl')
                     .insert([
@@ -962,7 +1322,11 @@
 
                 if (insertError) throw new Error("Gagal simpan database: " + insertError.message);
 
-                judulSukses.textContent = `${pilihJenis.value} Berhasil Tersimpan!`;
+                boxNotifSukses.className = "bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-sm flex items-center gap-2";
+                ikonSukses.textContent = "✅";
+                judulSukses.textContent = adalahTerlambat
+                    ? `Absen Masuk Tersimpan (Terlambat +${statusTerlambatSaatIni.menitTelat} mnt)`
+                    : `${pilihJenis.value} Berhasil Tersimpan!`;
                 waktuAbsen.textContent = `${namaSiswa} • ${waktuLengkap}`;
                 kartuHasil.classList.remove('hidden');
                 kartuHasil.scrollIntoView({ behavior: 'smooth' });
@@ -977,7 +1341,7 @@
         });
 
         // ==========================================
-        // 11. SERVICE WORKER & TOMBOL INSTALL PWA
+        // 12. SERVICE WORKER & TOMBOL INSTALL PWA
         // ==========================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -1003,6 +1367,7 @@
         });
 
         // Jalankan aplikasi
+        perbaruiStatusKoneksiUI();
         muatDataMasterDariDatabase();
         periksaJadwalJam();
         mulaiKamera('user');
